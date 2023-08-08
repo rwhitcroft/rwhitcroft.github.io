@@ -2,11 +2,17 @@
 layout: default
 ---
 <br/>
-## Shellcode: Null-Free (3)
+## Shellcode: Null-Free (2)
 * * *
 
-We can try using the narrower (2 byte) `ax` register instead of the 4-byte `eax` register to avoid having to send zero values for the higher bytes. (We need to zero `eax` first to clear any residual data in the high bytes.)
+Null bytes, and other bad characters, can usually be avoided by using different instructions to obtain the same result.
 
-![Null Bytes 2](/images/nullbytes2.png)
+If we want to set `eax` to `0x100`, we might try:
 
-Better, but there's still one null byte.
+```
+    mov   eax, 0x100             # just put 0x100 into eax
+```
+
+But this would result in three null bytes in the machine code:
+
+![Null Bytes 1](/images/nullbytes1.png)

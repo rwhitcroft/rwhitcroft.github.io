@@ -2,27 +2,14 @@
 layout: default
 ---
 <br/>
-## Shellcode: Strings (4)
+## Shellcode: Strings (3)
 * * *
-We can use a simple Python3 script to convert a string to reversed hex, the format we need in order to put it into a register and write it to memory.
+To store a string, the idea is to put the bytes into a register, then write the register somewhere in memory. That address will then be used as the pointer to the C-string that we can pass to functions.
 
-The string "test1234" in reversed hex is `0x3433323174736574`.
+Because we're in a little-endian environment, we'll need to put the bytes into the register in reverse before writing it to memory.
+
+We can use WinDbg's `da` command to display a C-string at a given address. WinDbg will treat the data at that address as a C-string and print characters until it encounters a null terminator.
 
 * * *
 
-```py
-import sys
-
-def to_reversed_hex(s):
-    r = [hex(ord(c)) for c in s]
-    ba = bytearray.fromhex("".join(r).replace("0x", ""))
-    ba.reverse()
-    return "0x" + ba.hex()
-
-print(to_reversed_hex(sys.argv[1]))
-```
-
-```bash
-$ python3 to_reversed_hex.py test1234
-0x3433323174736574
-```
+<p style="text-align: center;"><img src="/images/strings1.png"/></p>

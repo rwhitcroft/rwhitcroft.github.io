@@ -2,17 +2,15 @@
 layout: default
 ---
 <br/>
-## Shellcode: Null-Free (2)
+## Shellcode: Null-Free (1)
 * * *
 
-Null bytes, and other bad characters, can usually be avoided by using different instructions to obtain the same result.
+Depending on the application you're performing the buffer overflow against, certain characters must be avoided. These are known as “bad characters” because they affect how the buffer is consumed by the target application and can break the shellcode.
 
-If we want to set `eax` to `0x100`, we might try:
+For example, if the target is a web server, you may need to avoid 0x25 (%), 0x2f (/), and so on, because those characters will affect how the buffer gets parsed.
 
-```
-    mov   eax, 0x100             # just put 0x100 into eax
-```
+At the very least, the null byte (0x00) is often a bad character, as it acts as a delimiter between fields and may cause the payload buffer to be split or mangled.
 
-But this would result in three null bytes in the machine code:
+* * *
 
-![Null Bytes 1](/images/nullbytes1.png)
+![strcpy](/images/strcpy.png)

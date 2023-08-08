@@ -2,12 +2,10 @@
 layout: default
 ---
 <br/>
-## Shellcode: Position Independence (4)
+## Shellcode: Position Independence (3)
 * * *
-The better solution is to use the `jmp/call/pop` shellcode trick to dynamically find the address of the desired instruction.
+One solution is to ensure we only ever `call` backwards (to a lower address) to force the offset to be negative and much less likely to contain null bytes.
 
-Both `jmp` and `call` are used to transfer execution to a different address; however, `call` first pushes the address of the next instruction onto the stack so execution can be resumed where it left off (with the `ret` instruction).
-
-If we place the `call` immediately before the desired instruction, the return address will be pushed onto the stack and can be `pop`&apos;d off and stored in a register for later use.
+As before, `f7 ff ff ff` in little endian is `ff ff ff f7` (-9), so the operand to the `e8` opcode is -9, or "call backwards 9 bytes".
 * * *
-<p style="text-align: center;"><img src="/images/pic3.png"/></p>
+<p style="text-align: center;"><img src="/images/pic2.png"/></p>

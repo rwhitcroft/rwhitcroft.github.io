@@ -2,17 +2,30 @@
 layout: default
 ---
 <br/>
-## Shellcode: Strings (11)
+## Shellcode: Strings (10)
 * * *
 
-Previously, we have been writing strings directly to addresses (`rbp+0x50`). This time, we're using the stack to store our string by `push`ing data onto it.
-
-One benefit in using the stack is that each time we `push`, the stack pointer (`rsp`) moves automatically, so we can just keep `push`ing data, and `rsp` will always be pointing to the beginning of our string.
-
-* * *
-
-<p style="text-align: center;"><img src="/images/strings10.png"/></p>
+Or we can write a function that takes a string, converts it to hex, reverses it, chops it up into chunks, pushes it onto the stack, and uses `xor` to null-terminate the string.
 
 * * *
 
-<p style="text-align: center;"><img src="/images/strings9.png"/></p>
+```python
+def push_string(s):
+    reversed_hex = reverse_hex_string(to_hex(s))
+    chunks = []
+    while len(reversed_hex) > 0:
+        chunk = reversed_hex[-16:]
+        if len(chunk) < 16:
+            chunk = chunk.rjust(16, "f")
+        chunks.append(chunk)
+        reversed_hex = reversed_hex[:-16]
+
+    if len(s) % 8 == 0:
+        chunks.append("ffffffffffffffff")
+
+    chunks.reverse()
+    instructions = [f"mov rax, 0x{c}; push rax" for c in chunks]
+    instructions.append(f"xor byte ptr [rsp+{hex(len(s))}], 0xff")
+
+    return ';'.join(instructions)
+```

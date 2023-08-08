@@ -2,10 +2,8 @@
 layout: default
 ---
 <br/>
-## Shellcode: Position Independence (3)
+## Shellcode: Position Independence (2)
 * * *
-One solution is to ensure we only ever `call` backwards (to a lower address) to force the offset to be negative and much less likely to contain null bytes.
-
-As before, `f7 ff ff ff` in little endian is `ff ff ff f7` (-9), so the operand to the `e8` opcode is -9, or "call backwards 9 bytes".
+The raw bytes break down as follows: `e8` is the opcode for `call`, and the operand is `03 00 00 00` in little endian, which is `3`. Essentially, "call ahead 3 bytes" (3 + 6 == 9).
 * * *
-<p style="text-align: center;"><img src="/images/pic2.png"/></p>
+<p style="text-align: center;"><img src="/images/pic1.png"/></p>
