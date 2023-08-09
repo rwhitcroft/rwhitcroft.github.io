@@ -2,11 +2,11 @@
 layout: default
 ---
 <br/>
-## TODO
+## Locating Functions (3)
 * * *
 
-Unfinished:
-* explore LowLevel Visual Studio solution projects (FindKernel32, MessageBox, ReverseShell)
-* msgbox.py
-* revshell.py
-* prob other stuff
+Using this process, we can find the address of any function in any loaded DLL.
+
+* * *
+
+<p style="text-align: center;"><img src="/images/lf3.png"/></p>

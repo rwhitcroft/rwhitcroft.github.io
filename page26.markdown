@@ -2,16 +2,12 @@
 layout: default
 ---
 <br/>
-## Shellcode: Strings (8)
+## Shellcode: Strings (7)
 * * *
-One way to create a null byte (there are many) is to use the right-shift instruction (`shr`).
+To null-terminate our string, it's tempting to just try to include the null byte when we put our reversed hex bytes into `rax` and sacrificing one byte of space:
 
-When a number is right-shifted, the rightmost bits "fall off" and new bits come in on the left side. The new bits are always zeros.
+<p style="text-align: center;"><img src="/images/strings6.png"/></p>
 
-So, if we right shift 8 bits (1 byte), we drop the last byte of our string on the right and a new zero byte appears on the left. Of course, this means we lose our first character (the "t" in "test1234"), but that can be overcome.
+But of course that doesn't work because we just used a null character.
 
-Remember that because this is little endian, we need the null byte as the first character (on the left side), so we need to shift right.
-
-* * *
-
-<p style="text-align: center;"><img height="70" src="/images/strings7.png"/></p>
+We need a way to create a null character without sending a null character.

@@ -2,30 +2,12 @@
 layout: default
 ---
 <br/>
-## Shellcode: Strings (10)
+## Shellcode: Strings (9)
+* * *
+Since we're going to lose a byte when shifting, we'll update our string to "xtest123" (the "x" will drop). The new reversed hex value is `0x3332317473657478`. Note that the "x" can be anything except null.
+
+Examining `rax` before the `shr` instruction shows the hex representation of "321tsetx". After the shift, it becomes "\x00321tset", and is written to memory. Showing the string with `da` works as expected, and we now have a null-terminated string without having sent a null byte.
+
 * * *
 
-Or we can write a function that takes a string, converts it to hex, reverses it, chops it up into chunks, pushes it onto the stack, and uses `xor` to null-terminate the string.
-
-* * *
-
-```python
-def push_string(s):
-    reversed_hex = reverse_hex_string(to_hex(s))
-    chunks = []
-    while len(reversed_hex) > 0:
-        chunk = reversed_hex[-16:]
-        if len(chunk) < 16:
-            chunk = chunk.rjust(16, "f")
-        chunks.append(chunk)
-        reversed_hex = reversed_hex[:-16]
-
-    if len(s) % 8 == 0:
-        chunks.append("ffffffffffffffff")
-
-    chunks.reverse()
-    instructions = [f"mov rax, 0x{c}; push rax" for c in chunks]
-    instructions.append(f"xor byte ptr [rsp+{hex(len(s))}], 0xff")
-
-    return ';'.join(instructions)
-```
+<p style="text-align: center;"><img src="/images/strings8.png"/></p>

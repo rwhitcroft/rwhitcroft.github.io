@@ -2,11 +2,27 @@
 layout: default
 ---
 <br/>
-## Shellcode: Strings (5)
+## Shellcode: Strings (4)
 * * *
-After putting `0x3433323174736574` into `rax` and writing it to memory at `rbp+0x50`, we use `da` to display the string.
+We can use a simple Python3 script to convert a string to reversed hex, the format we need in order to put it into a register and write it to memory.
 
-Without a null terminator, `da` reads way past the end of our string, as will any other Windows function that expects a null-terminated string.
+The string "test1234" in reversed hex is `0x3433323174736574`.
+
 * * *
 
-<p style="text-align: center;"><img src="/images/strings4.png"/></p>
+```py
+import sys
+
+def to_reversed_hex(s):
+    r = [hex(ord(c)) for c in s]
+    ba = bytearray.fromhex("".join(r).replace("0x", ""))
+    ba.reverse()
+    return "0x" + ba.hex()
+
+print(to_reversed_hex(sys.argv[1]))
+```
+
+```bash
+$ python3 to_reversed_hex.py test1234
+0x3433323174736574
+```

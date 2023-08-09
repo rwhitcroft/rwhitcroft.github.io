@@ -2,13 +2,17 @@
 layout: default
 ---
 <br/>
-## Shellcode: Null-Free (5)
+## Shellcode: Null-Free (4)
 * * *
 
-To demonstrate that there are many ways to achieve the same result, here's another example that ends up being one byte smaller:
+Instead of using `0x100` (which is `00 01` in little endian bytes), we can use `0x101` (`01 01`) to avoid the null byte in our integer.
+
+As before, we need to zero the 32-bit `eax` register first to clear any upper bits, then `dec eax` to subtract one from `0x101` to get `0x100`.
 
 ```
-    31c0          xor   eax,eax       # zero eax
-    ffc0          inc   eax           # increment eax
-    c1e008        shl   eax,8         # left shift eax by 8 bits (1 byte)
+    31c0            xor   eax,eax       # zero eax
+    66b80101        mov   ax,101h       # put 0x101 into ax
+    ffc8            dec   eax           # decrement eax
 ```
+
+We now have `eax` set to `0x100` with no null bytes, but at the cost of shellcode size.

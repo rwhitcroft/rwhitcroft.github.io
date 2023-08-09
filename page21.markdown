@@ -2,14 +2,24 @@
 layout: default
 ---
 <br/>
-## Shellcode: Strings (3)
+## Shellcode: Strings (2)
 * * *
-To store a string, the idea is to put the bytes into a register, then write the register somewhere in memory. That address will then be used as the pointer to the C-string that we can pass to functions.
+In C (and Windows in general), "C-strings" are one-dimensional arrays of single-byte values with a null terminator (`0x00`).
 
-Because we're in a little-endian environment, we'll need to put the bytes into the register in reverse before writing it to memory.
+In terms of arrays, `s1` and `s2` are not the same. But in terms of C-strings, they are identical, because a string stops at the first null byte (position 6 in both).
 
-We can use WinDbg's `da` command to display a C-string at a given address. WinDbg will treat the data at that address as a C-string and print characters until it encounters a null terminator.
+When we declare a C-string (using double quotes), the compiler appends a null terminator automatically.
 
-* * *
+The `sizeof` operator is used to get the total size of an array. The `strlen()` function is used to get the total length of a string, not including the null terminator.
 
-<p style="text-align: center;"><img src="/images/strings1.png"/></p>
+```c
+    char s1[] = "hello";           // raw: { h, e, l, l, o, 0 }
+    char s2[] = "hello\x00there";  // raw: { h, e, l, l, o, 0, t, h, e, r, e, 0 }
+
+    printf("%d\n", sizeof(s1));    // prints "6"
+    printf("%d\n", sizeof(s2));    // prints "12"
+
+    printf("%d\n", strlen(s1));    // prints "5"
+    printf("%d\n", strlen(s2));    // also prints "5"
+
+```

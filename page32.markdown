@@ -2,13 +2,13 @@
 layout: default
 ---
 <br/>
-## Process Environment Block (1)
+## Shellcode: Loading Libraries & Locating Functions
 * * *
 
-"The Process Environment Block (PEB) is a data structure in the Windows NT operating system family. It is an opaque data structure that is used by the operating system internally, most of whose fields are not intended for use by anything other than the operating system." --Wikipedia
+Shellcode will need to make use of the Windows API. To do that, it must first locate (or load) any modules it needs.
 
-To locate the base address of `kernel32.dll`, our shellcode will read data from the various structures stored in the PEB.
+For a reverse shell, `ws2_32.dll` is needed, as it contains the socket functionality. For `MessageBoxA()`, we need `user32.dll`.
 
-* * *
+To load a module, the `LoadLibraryA()` function is used, which resides in `kernel32.dll` (which is itself almost always loaded).
 
-<p style="text-align: center;"><img src="/images/peb1.png"/></p>
+Locating the base address of `kernel32.dll` is generally the first thing modern shellcode does.

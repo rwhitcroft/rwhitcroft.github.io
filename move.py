@@ -13,18 +13,24 @@ class PageFile:
 		self.extension = "markdown"
 
 	def __str__(self):
-		return f"{self.prefix}{self.num}"
+		return f"{self.prefix}{self.num}.{self.extension}"
 
 	def move(self, delta):
-		orig = str(self)
+		old = str(self)
 		self.num += delta
-		new = str(self)
-		print(f"moving {orig} -> {self}")
+		print(f"{old} -> {self}")
+		os.rename(old, str(self))
 
-files = os.listdir('.')
+files_to_move = []
 
-for file in files:
+for file in os.listdir('.'):
 	if 'page' in file:
 		p = PageFile(file)
 		if p.num >= first:
-			p.move(delta)
+			files_to_move.append(p)
+
+files_to_move.sort(key=lambda x: x.num, reverse=True)
+
+for pagefile in files_to_move:
+	pagefile.move(delta)
+

@@ -2,17 +2,20 @@
 layout: default
 ---
 <br/>
-## Locating Functions (1)
+## Export Address Table (2)
 * * *
 
-We can now enumerate all the functions exported by `kernel32.dll` and have their names and addresses.
-
-We could now search for functions by name (`LoadLibraryA`), but this is cumbersome to do in shellcode and would cause identifiable strings to be present in the shellcode.
-
-Instead, we hash the name of the function we want, iterate through the exported functions, hash each function name, and compare it to our hash. If it matches, we've found the function.
-
-The hashing algorithm uses bit rotation and addition to generate a unique 4-byte hash of a string.
+The `IMAGE_EXPORT_DIRECTORY` structure (aka EAT) contains two members we need: `AddressOfFunctions` and `AddressOfNames`.
 
 * * *
 
-<p style="text-align: center;"><img src="/images/lf1.png"/></p>
+<p style="text-align: center;"><img src="/images/eat2.png"/></p>
+
+* * *
+
+We can use these to enumerate all of the DLL's functions.
+
+* * *
+
+<p style="text-align: center;"><img src="/images/eat3.png"/></p>
+

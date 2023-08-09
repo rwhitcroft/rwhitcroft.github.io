@@ -2,17 +2,15 @@
 layout: default
 ---
 <br/>
-## Endianness
+## Instructions & Operands
 * * *
 
-Endianness describes the order in which a sequence of bytes is stored in computer memory. Bytes are either stored left-to-right (big), or they're reversed (little). Windows is little endian, meaning it stores bytes in reverse.
+Assembly instructions are actions to carry out, and operands are the data to operate on (often a register or memory address). Most assembly instructions require at least one operand. For example, if you want to add two numbers, `add` is the instruction, and the two registers to add are the operands.
 
-<p style="text-align: center;"><img src="/images/endianness2.webp"/></p>
+The machine code below is what the processor consumes - the disassembly is just for humans.
 
-* * *
+While at first the machine code seems unintelligible, a pattern is visible below. If we consider that `mov eax, 0x11111111` translates to `b8 11 11 11 11`, then `b8` must be the opcode for `mov` into `eax`. The next three `mov` instructions show the same thing, except the opcode is `bb` when the destination register is `ebx`.
 
-Below, we're putting `0x4142434445464748` into `rax` and then writing the register contents somewhere in memory (`rsp`).
+Shellcode *is* machine code. These bytes are what get injected and executed in a buffer overflow exploit.
 
-If we ask WinDbg to show us the raw bytes at `rsp` with `db`, it shows `48 47 46 45 44 43 42 41`, but if we ask for the 64-bit number representation of those same 8 bytes with `dq` (display qword), it shows the value we supplied originally.
-
-<p style="text-align: center;"><img src="/images/endianness.png"/></p>
+<p style="text-align: center;"><img src="/images/insops.png"/></p>
