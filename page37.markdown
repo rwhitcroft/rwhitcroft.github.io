@@ -2,13 +2,13 @@
 layout: default
 ---
 <br/>
-## Export Address Table (1)
+## Process Environment Block (4)
 * * *
 
-Now that we have the base address of `kernel32.dll`, we need a way to find the functions inside it, namely `LoadLibraryA()`.
+To better illustrate the process, here is the C code to enumerate loaded modules and locate the base address of `kernel32.dll`.
 
-Since DLLs are libraries of functions that are meant to be called externally, there must be a way to find those functions inside the DLL. This can be done by examining the DLL's Export Address Table (EAT).
+The shellcode follows exactly the same process.
 
 * * *
 
-<p style="text-align: center;"><img src="/images/eat1.png"/></p>
+<p style="text-align: center;"><img src="/images/peb4.png"/></p>
