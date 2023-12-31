@@ -2,13 +2,11 @@
 layout: default
 ---
 <br/>
-## Process Environment Block (1)
+## Process Environment Block (2)
 * * *
 
-"The Process Environment Block (PEB) is a data structure in the Windows NT operating system family. It is an opaque data structure that is used by the operating system internally, most of whose fields are not intended for use by anything other than the operating system." --Wikipedia
-
-To locate the base address of `kernel32.dll`, our shellcode will read data from the various structures stored in the PEB.
+A pointer to the `PEB` structure, which contains a pointer to the `PEB_LDR_DATA` structure (`Ldr`), can be obtained by any process by reading the value at offset `0x60` (on x64) from the base of the `gs` segment.
 
 * * *
 
-<p style="text-align: center;"><img src="/images/peb1.png"/></p>
+<p style="text-align: center;"><img src="/images/peb2.png"/></p>

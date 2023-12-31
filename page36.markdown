@@ -2,11 +2,13 @@
 layout: default
 ---
 <br/>
-## Process Environment Block (3)
+## Process Environment Block (4)
 * * *
 
-The shellcode's task is then to get a pointer to the `PEB` structure, follow that to get a pointer to the `PEB_LDR_DATA` structure, follow that to get a pointer to a linked list of loaded modules, then cycle through until `kernel32.dll` is found.
+To better illustrate the process, here is the C code to enumerate loaded modules and locate the base address of `kernel32.dll`.
+
+The shellcode follows exactly the same process.
 
 * * *
 
-<p style="text-align: center;"><img src="/images/peb3.png"/></p>
+<p style="text-align: center;"><img src="/images/peb4.png"/></p>

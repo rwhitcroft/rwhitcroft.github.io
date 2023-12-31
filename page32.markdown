@@ -2,13 +2,13 @@
 layout: default
 ---
 <br/>
-## Shellcode: Overview
+## Shellcode: Loading Libraries & Locating Functions
 * * *
 
-Modern shellcode more or less does the following:
-- Read the Process Environment Block (PEB) to locate the linked list of loaded DLLs
-- Iterate through the list looking for kernel32.dll (base address)
-- Resolve the address of LoadLibraryA() in kernel32.dll to load any required DLLs
-- Load required DLLs (ws2_32.dll, user32.dll, etc) with LoadLibraryA()
-- To find function addresses, hash the name of the function, enumerate the DLL's Export Address Table (EAT), hash each function name, and compare the hashes
-- Prepare registers with the required parameters (rcx, rdx, r8, r9) and call the functions
+Shellcode will need to make use of the Windows API. To do that, it must first locate (or load) any modules it needs.
+
+For a reverse shell, `ws2_32.dll` is needed, as it contains the socket functionality. For `MessageBoxA()`, we need `user32.dll`.
+
+To load a module, the `LoadLibraryA()` function is used, which resides in `kernel32.dll` (which is itself almost always loaded).
+
+Locating the base address of `kernel32.dll` is generally the first thing modern shellcode does.
