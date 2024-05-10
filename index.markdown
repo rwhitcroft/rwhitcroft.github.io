@@ -18,7 +18,7 @@ To monitor thread creation and image loads, it calls two more similar functions:
 When the callback function receives a notification, it performs several checks to determine whether it should allow or block the request.
 
 ![cbk7.sys](/images/psset1.png)
-<p style="text-align: center; font-size: 10px;">Disassembly pseudocode of cbk7.sys calling PsSetCreateProcessNotifyRoutine()</p>
+<p style="text-align: center; font-size: 12px;">Disassembly pseudocode of cbk7.sys calling PsSetCreateProcessNotifyRoutine()</p>
 
 # Approach
 The goal is to run arbitrary code on the host to get a reverse shell. Since custom executables, DLLs, and scripts are blocked by Carbon Black, 
