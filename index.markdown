@@ -1,9 +1,11 @@
 ---
 layout: default
 ---
+<br/>
 
 # Environment
-Stuff here.
+- Carbon Black: Aggressive software restriction - prevents execution of unknown executables, including DLLs, VB/JS scripts, and drivers.
+- Cortex XDR: Advanced endpoint protection. Annoyingly good at detecting and blocking almost every malicious activity.
 
 # Next Thing
 More stuff.
