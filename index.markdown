@@ -15,5 +15,7 @@ The target host is a fully-patched Windows 10 workstation with Carbon Black and 
 Carbon Black's kernel driver (cbk7.sys), which is loaded at boot time, is able to inspect process creation by calling the `PsSetCreateProcessNotifyRoutine()` Windows API. From MSDN: "The PsSetCreateProcessNotifyRoutine routine adds a driver-supplied callback routine to, or removes it from, a list of routines to be called whenever a process is created or deleted."
 To monitor thread creation and image loads, it calls two more similar functions: `PsSetCreateThreadNotifyRoutine()` and `PsSetLoadImageNotifyRoutine()`. (An "image" in this context usually just means a DLL.)
 
+![cbk7.sys](/images/psset1.png)
+
 # Approach
 The goal is to run arbitrary code on the host to get a reverse shell. Since custom executables, DLLs, and scripts are blocked by Carbon Black, 
