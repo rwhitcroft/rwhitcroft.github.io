@@ -35,9 +35,9 @@ public class Kernel32 {
     public static extern IntPtr OpenProcess(uint dwDesiredAccess, uint bInheritHandle, uint dwProcessId);
     ...etc...
 }
-```
+'@
 ...
-```powershell
+
 $Flags = 0x2a # (PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE)
 $hProcess = [Kernel32]::OpenProcess($Flags, $False, $Notepad.Id)
 Write-Host "OpenProcess() returns handle $hProcess"
