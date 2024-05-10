@@ -4,8 +4,8 @@ layout: default
 <br/>
 
 # Environment
-- Carbon Black: Aggressive software restriction - prevents execution of unknown executables, including DLLs, VB/JS scripts, and drivers.
-- Cortex XDR: Advanced endpoint protection. Annoyingly good at detecting and blocking almost every malicious activity.
+- <b>Carbon Black</b>: Aggressive software restriction - prevents execution of unknown executables, including DLLs, VB/JS scripts, and drivers. PowerShell is allowed since it is part of the Windows base system, but see below.
+- <b>Cortex XDR</b>: Advanced endpoint protection. Annoyingly good at detecting and blocking almost every malicious activity.
 
 # Next Thing
 More stuff.
