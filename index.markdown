@@ -1,7 +1,14 @@
 ---
 layout: default
 ---
-<script>
-document.location="/page1";
-</script>
 
+# Environment
+Stuff here.
+
+# Next Thing
+More stuff.
+
+ test
+ test
+
+Things.
