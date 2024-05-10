@@ -13,7 +13,9 @@ The target host is a fully-patched Windows 10 workstation with Carbon Black and 
 
 # Carbon Black Driver
 Carbon Black's kernel driver (cbk7.sys), which is loaded at boot time, is able to inspect process creation by calling the `PsSetCreateProcessNotifyRoutine()` Windows API. From MSDN: "The PsSetCreateProcessNotifyRoutine routine adds a driver-supplied callback routine to, or removes it from, a list of routines to be called whenever a process is created or deleted."
+
 To monitor thread creation and image loads, it calls two more similar functions: `PsSetCreateThreadNotifyRoutine()` and `PsSetLoadImageNotifyRoutine()`. (An "image" in this context usually just means a DLL.)
+When the callback function receives a notification, it performs several checks to determine whether it should allow or block the request.
 
 ![cbk7.sys](/images/psset1.png)
 
