@@ -8,7 +8,8 @@ Stuff here.
 # Next Thing
 More stuff.
 
- test
- test
+```
+mov rax, 0x1234
+```
 
 Things.
