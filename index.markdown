@@ -23,6 +23,8 @@ When the callback function receives a notification, it performs several checks t
 # Approach
 The goal is to run arbitrary code on the host to get a reverse shell. Since custom executables, DLLs, and scripts are blocked by Carbon Black, two possibilities come to mind: PowerShell and process injection.
 
+<hr/>
+
 # PowerShell
 The general approach with PowerShell is to import Windows API functions using the `Add-Type` cmdlet, then call them as usual from within PowerShell.
 
@@ -43,4 +45,6 @@ $hProcess = [Kernel32]::OpenProcess($Flags, $False, $Notepad.Id)
 ```
 <p style="text-align: center; font-size: 12px;">Importing and calling Windows API functions in PowerShell</p>
 
-While Carbon Black generally leaves PowerShell alone because it is an allowlisted application, Cortex XDR does not. In fact, the moment the `Add-Type` cmdlet is executed with the DllImport keywords, Cortex XDR kills the PowerShell process. It may be possible to obfuscate the `Add-Type` arguments but this seems like a losing battle.
+While Carbon Black generally leaves PowerShell alone because it is an allowlisted application, Cortex XDR does not. In fact, the moment the `Add-Type` cmdlet is executed with the `DllImport` directive, Cortex XDR kills the PowerShell process. It may be possible to obfuscate the `Add-Type` arguments, but this seems like a losing battle.
+
+# Process Injection
