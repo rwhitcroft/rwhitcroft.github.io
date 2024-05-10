@@ -21,4 +21,26 @@ When the callback function receives a notification, it performs several checks t
 <p style="text-align: center; font-size: 12px;">Disassembly pseudocode of cbk7.sys calling PsSetCreateProcessNotifyRoutine()</p>
 
 # Approach
-The goal is to run arbitrary code on the host to get a reverse shell. Since custom executables, DLLs, and scripts are blocked by Carbon Black, 
+The goal is to run arbitrary code on the host to get a reverse shell. Since custom executables, DLLs, and scripts are blocked by Carbon Black, two possibilities come to mind: PowerShell and process injection.
+
+# PowerShell
+The general approach with PowerShell is to import Windows API functions using the `Add-Type` cmdlet, then call them as usual from within PowerShell.
+
+```powershell
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public class Kernel32 {
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    public static extern IntPtr OpenProcess(uint dwDesiredAccess, uint bInheritHandle, uint dwProcessId);
+    ...etc...
+}
+```
+...
+```powershell
+$Flags = 0x2a # (PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE)
+$hProcess = [Kernel32]::OpenProcess($Flags, $False, $Notepad.Id)
+Write-Host "OpenProcess() returns handle $hProcess"
+```
+
+While Carbon Black generally leaves PowerShell alone because it is an allowlisted application, Cortex XDR does not. In fact, the moment the `Add-Type` cmdlet is executed with the DllImport keywords, Cortex XDR kills the PowerShell process.
