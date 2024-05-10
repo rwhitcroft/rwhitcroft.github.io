@@ -40,7 +40,7 @@ public class Kernel32 {
 
 $Flags = 0x2a # (PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE)
 $hProcess = [Kernel32]::OpenProcess($Flags, $False, $Notepad.Id)
-Write-Host "OpenProcess() returns handle $hProcess"
 ```
+<p style="text-align: center; font-size: 12px;">Importing and calling Windows API functions in PowerShell</p>
 
-While Carbon Black generally leaves PowerShell alone because it is an allowlisted application, Cortex XDR does not. In fact, the moment the `Add-Type` cmdlet is executed with the DllImport keywords, Cortex XDR kills the PowerShell process.
+While Carbon Black generally leaves PowerShell alone because it is an allowlisted application, Cortex XDR does not. In fact, the moment the `Add-Type` cmdlet is executed with the DllImport keywords, Cortex XDR kills the PowerShell process. It may be possible to obfuscate the `Add-Type` arguments but this seems like a losing battle.
