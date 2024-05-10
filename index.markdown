@@ -8,8 +8,9 @@ Stuff here.
 # Next Thing
 More stuff.
 
-```
-mov rax, 0x1234
+```csharp
+byte[] x = { 0x90, 0x90, 0x90, 0x90 };
+Int64 i = 0x4141414141414141;
 ```
 
 Things.
