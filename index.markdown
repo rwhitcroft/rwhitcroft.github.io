@@ -35,7 +35,7 @@ This technique has been known for years and usually consists of the following st
 - `WriteProcessMemory()` to write the shellcode into the newly-allocated buffer in the target process.
 - `CreateRemoteThread()` to create a thread in the target process whose entrypoint is the shellcode buffer.
 
-Because this technique is so well-known, nearly all AV/EDR products will closely monitor these functions using hooks. Calling these four functions in sequence will almost always get caught, so it's better to find different ways to achieve the same outcome. As we'll see, obtaining a reverse shell under the watchful eyes of Carbon Black and Cortex XDR was possible using only two of the four functions above (`OpenProcess()` and `WriteProcessMemory()`), lowering the likelihood of detection.
+Because this technique is so well-known, nearly all AV/EDR products will closely monitor these functions using hooks. Calling these four functions in sequence will almost always get you caught, so it's better to find different ways to achieve the same outcome. As we'll see, obtaining a reverse shell under the watchful eyes of Carbon Black and Cortex XDR was possible using only two of the four functions above (`OpenProcess()` and `WriteProcessMemory()`), lowering the likelihood of detection.
 
 <hr/>
 
@@ -66,9 +66,11 @@ While Carbon Black generally leaves PowerShell alone because it is an allowliste
 # The Story So Far
 We can't run exes. We can't load DLLs. We can't use vbscript or jscript. We can't use PowerShell to import Windows functions. Fortunately, there is one avenue left to explore that may allow us import and call the Windows APIs above needed to inject code.
 
+<hr/>
+
 # InstallUtil
 `InstallUtil` is a Windows base application that is used for installing and uninstalling software. The only functionality we care about is its `/u` option which is used to uninstall applications.
 
-When an applications are built in C#, developers have the ability to add in two special functions: `Install()` and `Uninstall()`. These functions are used to perform any initialization needed when installing, and any cleanup required when uninstalling. We will focus on `Uninstall()` because it does not require administrator privileges.
+When applications are built in C#, developers have the ability to add in two special functions: `Install()` and `Uninstall()`. These functions are never called internally, but instead are used to perform any initialization needed when installing, and any cleanup needed when uninstalling. We will focus on `Uninstall()` because it does not require administrator privileges.
 
 We are not concerned with any actual install/uninstall stuff - the only reason this is useful is because it should let us run arbitrary C# code to perform the process injection. Even though we can't run our exe, we can still put code in its `Uninstall()` function and then use `InstallUtil /u app.exe` to force Windows to call it for us.
