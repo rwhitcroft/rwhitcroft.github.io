@@ -27,7 +27,15 @@ When the callback function receives a notification, it performs several checks t
 <hr/>
 
 # Approach
-The goal is to run arbitrary code on the host to get a reverse shell. Since custom executables, DLLs, and scripts are blocked by Carbon Black, two possibilities come to mind: PowerShell and process injection.
+The goal is to run arbitrary code on the host to get a reverse shell. Since custom executables, DLLs, and scripts are blocked by Carbon Black, we can try injecting code into an existing process (or one that we're allowed to launch such as notepad since it's a Windows base application). This method is sometimes called "fork & run" where a process is started whose only purpose is to receive an injection of code.
+
+This technique has been known for years and usually consists of the following steps:
+- `OpenProcess()` to get a handle to the target process.
+- `VirtualAllocEx()` to allocate a read-write-execute buffer in the target process.
+- `WriteProcessMemory()` to write the shellcode into the newly-allocated buffer in the target process.
+- `CreateRemoteThread()` to create a thread in the target process whose entrypoint is the shellcode buffer.
+
+Because this technique is so well-known, nearly all AV/EDR products will closely monitor these functions using hooks. Calling these four functions in sequence will almost always cause an alert, so it's better to find different ways to achieve the same outcome. As we'll see, obtaining a reverse shell under the watchful eyes of Carbon Black and Cortex XDR was possibly using only one of the four functions above (`OpenProcess()`).
 
 <hr/>
 
@@ -41,17 +49,17 @@ using System.Runtime.InteropServices;
 public class Kernel32 {
     [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
     public static extern IntPtr OpenProcess(uint dwDesiredAccess, uint bInheritHandle, uint dwProcessId);
-    ...etc...
+    ...snip...
 }
 '@
-...
+...snip...
 
-$Flags = 0x2a # (PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE)
+$Flags = 0x2a # aka (PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE)
 $hProcess = [Kernel32]::OpenProcess($Flags, $False, $Notepad.Id)
 ```
 <p style="text-align: center; font-size: 12px;">Importing and calling Windows API functions in PowerShell</p>
 
-While Carbon Black generally leaves PowerShell alone because it is an allowlisted application, Cortex XDR does not. In fact, the moment the `Add-Type` cmdlet is executed with the `DllImport` directive, Cortex XDR kills the PowerShell process. It may be possible to obfuscate the `Add-Type` arguments, but this seems like a losing battle.
+While Carbon Black generally leaves PowerShell alone because it is an allowlisted application, Cortex does not. In fact, the moment the `Add-Type` cmdlet is executed with the `DllImport` directive, Cortex kills the PowerShell process. It may be possible to obfuscate the `Add-Type` arguments, but this seems like a losing battle.
 
 <hr/>
 
