@@ -75,6 +75,8 @@ When applications are built in C#, developers have the ability to add in two spe
 
 We are not concerned with any actual install/uninstall stuff - the only reason this is useful is because it should let us run arbitrary C# code to perform the process injection. Even though we can't run our exe, we can still put code in its `Uninstall()` function and then use `InstallUtil /u app.exe` to force Windows to call it for us, bypassing Carbon Black's restrictions.
 
+<hr/>
+
 # PoC #1
 
 ```csharp
@@ -109,6 +111,7 @@ namespace IU
     }
 }
 ```
+<p style="text-align: center; font-size: 12px;">PoC that successfully launches notepad.exe</p>
 
 If we build this app, upload it to the target system, then do `installutil /u app.exe`, we see a new instance of notepad.exe pop up, proving that the `Uninstall()` function was executed.
 
