@@ -329,3 +329,13 @@ We have shellcode at a known address, but when we tried to `CreateRemoteThread()
 
 # An Alternative to CreateRemoteThread()
 Instead of creating a thread to execute our shellcode, we can try to use notepad's UI functionality to make it call a specific function. For example, let's pretend there's a `ShowAbout()` function inside notepad that gets called when the user clicks Help -> About Notepad. We could modify our C# code to write our shellcode at the address of `ShowAbout()`, completely clobbering the function's instructions, then click on Help -> About Notepad to trigger the `call` to this function where our shellcode is waiting to be executed.
+
+While there is nothing quite as obvious as `ShowHelp()`, we can use IDA to look for a function whose name could give a hint as to when it will be called:
+
+![replacesel](/images/replacesel.png)
+<p style="text-align: center; font-size: 12px;">IDA displaying notepad's functions</p>
+
+It is reasonable to assume that `ReplaceSel()` might mean "replace selection", which could be triggered when the user hits ctrl-H to do a text search/replace. We can test this assumption by setting a breakpoint on `notepad!ReplaceSel` in Windbg and then doing a search/replace:
+
+![replacesel2](/images/replacesel2.png)
+<p style="text-align: center; font-size: 12px;">Windbg breakpoint on ReplaceSel()</p>
