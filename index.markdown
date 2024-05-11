@@ -297,7 +297,9 @@ We make two small updates to the C# code:
     IntPtr hThread = CreateRemoteThread(hProcess, IntPtr.Zero, 0, WriteAddress, IntPtr.Zero, 0, IntPtr.Zero);
 ```
 
+<br/>
 Rebuild, re-upload, run. And...
+<br/>
 
 ![alert](/images/alert.png)
 <p style="text-align: center; font-size: 12px;">Cortex XDR detection popup</p>
