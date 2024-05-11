@@ -54,7 +54,7 @@ public class Kernel32 {
 '@
 ...snip...
 
-$Flags = 0x2a # aka (PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE)
+$Flags = 0x28 # aka (PROCESS_VM_OPERATION | PROCESS_VM_WRITE)
 $hProcess = [Kernel32]::OpenProcess($Flags, $False, $Notepad.Id)
 ```
 <p style="text-align: center; font-size: 12px;">Importing and calling Windows API functions in PowerShell</p>
@@ -113,5 +113,52 @@ namespace IU
 ```
 <p style="text-align: center; font-size: 12px;">PoC that successfully launches notepad.exe</p>
 
-If we build this app (now known as `iu.exe`), upload it to the target system, then do `installutil /u iu.exe`, we see a new instance of notepad.exe pop up, proving that the `Uninstall()` function was executed.
+If we build this app (now known as `iu.exe`), upload it to the target system, then do `installutil /u iu.exe`, we see a new instance of notepad.exe pop up, proving that the `Uninstall()` function was executed. We can now build on this PoC to try injecting code into notepad.exe.
 
+<hr/>
+
+# An Alternative to VirtualAllocEx()
+Code injection will always require a memory buffer in the target process that is marked as executable. This is achieved either by passing the `PAGE_EXECUTE_READWRITE` constant to `VirtualAllocEx()` at allocation time, or by calling `VirtualProtect()` (with the same constant) to change the permissions on an existing memory region. Ideally, we don't want to do either of these things, because allocating memory marked as executable is a giant red flag to EDR.
+
+We'll give Cortex its due credit by not even attempting the traditional steps described in the previous section. Instead, we'll use Windbg to examine the memory regions in the notepad.exe process (the injection target).
+
+```
+0:006> !address
+                                     
+Mapping file section regions...
+Mapping module regions...
+Mapping PEB regions...
+Mapping TEB and stack regions...
+Mapping heap regions...
+Mapping page heap regions...
+Mapping other regions...
+Mapping stack trace database regions...
+Mapping activation context regions...
+
+        BaseAddress      EndAddress+1        RegionSize     Type       State       Protect
+-------------------------------------------------------------------------------------------------
+<snip>
+      7ff7`e7f20000     7ff7`e7f21000        0`00001000 MEM_IMAGE   MEM_COMMIT                                     
+      7ff7`e7f21000     7ff7`e7f46000        0`00025000 MEM_IMAGE   MEM_COMMIT  PAGE_EXECUTE_READ                  
+      7ff7`e7f46000     7ff7`e7f50000        0`0000a000 MEM_IMAGE   MEM_COMMIT                                     
+      7ff7`e7f50000     7ff7`e7f53000        0`00003000 MEM_IMAGE   MEM_COMMIT                                     
+      7ff7`e7f53000     7ff7`e7f58000        0`00005000 MEM_IMAGE   MEM_COMMIT                                     
+<snip>
+```
+<p style="text-align: center; font-size: 12px;">Output of the Windbg !address command (edited for brevity)</p>
+
+In the output above we can see that one of the memory regions is marked as `PAGE_EXECUTE_READ`. This means that data in this region can be treated as instructions executed by the CPU, whereas regions without this protection cannot (data only). In fact, this is the `.text` section, where all of the application's actual code is stored, so of course it must be executable. If we can manage to write our shellcode somewhere in this region, we can move on to worrying about how to execute it.
+
+<hr/>
+
+# WriteProcessMemory()
+A keen observer will have noticed that the region's protection is `PAGE_EXECUTE_READ` instead of `PAGE_EXECUTE_READWRITE`, so how are we going to write to it? Not to worry - an undocumented feature of `WriteProcessMemory()` is that it ignores protection flags and will happily write to memory that is not marked as writable.
+
+From MSDN: "`WriteProcessMemory()` copies the data from the specified buffer in the current process to the address range of the specified process. Any process that has a handle with `PROCESS_VM_WRITE` and `PROCESS_VM_OPERATION` access to the process to be written to can call the function."
+
+![memaccess](/images/memaccess.png)
+<p style="text-align: center; font-size: 12px;">Partial list of memory protection constants</p>
+
+According to this documentation, we need to have a handle to the process which has the `PROCESS_VM_WRITE` (`0x20`) and `PROCESS_VM_OPERATION` (`0x8`) flags. When these are bitwise-OR'd together, we get `0x28`, which is what we'll pass to the call to `OpenProcess()`.
+
+<hr/>
