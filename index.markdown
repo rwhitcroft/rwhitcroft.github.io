@@ -302,7 +302,9 @@ Rebuild, re-upload, run. And...
 <br/><br/>
 
 ![alert](/images/alert.png)
-<p style="text-align: center; font-size: 12px;">Cortex XDR detection popup</p>
 
 Oh no! The introduction of `CreateRemoteThread()` is a step too far in Cortex's opinion.
 
+<hr/>
+
+# An Alternative to CreateRemoteThread()
