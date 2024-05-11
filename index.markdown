@@ -6,14 +6,14 @@ layout: default
 # What Is This?
 This is the story of getting shellcode execution and a reverse shell on a hardened host in a well-managed (and well-funded) network. Additional odds and ends related to binary exploitation may also make an appearance.
 
-<hr/>
+<br/><hr/>
 
 # Environment
 The target host is a fully-patched Windows 10 workstation with Carbon Black and Cortex XDR.
 - <b>Carbon Black</b>: Aggressive software restriction - prevents execution of unknown executables, including DLLs, VB/JS scripts, and drivers. PowerShell is allowed since it is part of the Windows base system, but see below.
 - <b>Cortex XDR</b>: Sophisticated endpoint protection, very effective at detecting and blocking threats.
 
-<hr/>
+<br/><hr/>
 
 # Carbon Black Driver
 Carbon Black's kernel driver (cbk7.sys), which is loaded at boot time, is able to inspect process creation by calling the `PsSetCreateProcessNotifyRoutine()` Windows API. From MSDN: "The PsSetCreateProcessNotifyRoutine routine adds a driver-supplied callback routine to, or removes it from, a list of routines to be called whenever a process is created or deleted."
@@ -24,7 +24,7 @@ When the callback function receives a notification, it performs several checks t
 ![cbk7.sys](/images/psset1.png)
 <p style="text-align: center; font-size: 12px;">Disassembly pseudocode of cbk7.sys calling PsSetCreateProcessNotifyRoutine()</p>
 
-<hr/>
+<br/><hr/>
 
 # Approach
 The goal is to run arbitrary code on the host to get a reverse shell. Since custom executables, DLLs, and scripts are blocked by Carbon Black, we can try injecting code into an existing process (or one that we're allowed to launch such as notepad since it's a Windows base application). This method is sometimes called "fork & run" where a process is started whose only purpose is to receive an injection of code.
@@ -37,7 +37,7 @@ This technique has been known for years and usually consists of the following st
 
 Because this technique is so well-known, nearly all AV/EDR products will closely monitor these functions using hooks. Calling these four functions in sequence will almost always get you caught, so it's better to find different ways to achieve the same outcome. As we'll see, obtaining a reverse shell under the watchful eyes of Carbon Black and Cortex XDR was possible using only two of the four functions above (`OpenProcess()` and `WriteProcessMemory()`), lowering the likelihood of detection.
 
-<hr/>
+<br/><hr/>
 
 # PowerShell
 The general approach with PowerShell is to import Windows API functions using the `Add-Type` cmdlet, then call them as usual from within PowerShell.
@@ -61,12 +61,12 @@ $hProcess = [Kernel32]::OpenProcess($Flags, $False, $Notepad.Id)
 
 While Carbon Black generally leaves PowerShell alone because it is an allowlisted application, Cortex does not. In fact, the moment the `Add-Type` cmdlet is executed with the `DllImport` directive, Cortex kills the PowerShell process. It may be possible to obfuscate the `Add-Type` arguments, but this seems like a losing battle.
 
-<hr/>
+<br/><hr/>
 
 # The Story So Far
 We can't run exes. We can't load DLLs. We can't use vbscript or jscript. We can't use PowerShell to import Windows functions. Fortunately, there is one avenue left to explore that may allow us import and call the Windows APIs above needed to inject code.
 
-<hr/>
+<br/><hr/>
 
 # InstallUtil
 `InstallUtil` is a Windows base application that is used for installing and uninstalling software. The only functionality we care about is its `/u` option which is used to uninstall applications.
@@ -75,7 +75,7 @@ When applications are built in C#, developers have the ability to add in two spe
 
 We are not concerned with any actual install/uninstall stuff - the only reason this is useful is because it should let us run arbitrary C# code to perform the process injection. Even though we can't run our exe, we can still put code in its `Uninstall()` function and then use `InstallUtil /u myapp.exe` to force Windows to call it for us, bypassing Carbon Black's restrictions.
 
-<hr/>
+<br/><hr/>
 
 # PoC #1
 
@@ -116,7 +116,7 @@ namespace IU
 
 If we build this app (now known as `iu.exe`), upload it to the target system, then do `installutil /u iu.exe`, we see a new instance of notepad.exe pop up, proving that the `Uninstall()` function was executed. We can now build on this PoC to try injecting code into notepad.exe.
 
-<hr/>
+<br/><hr/>
 
 # An Alternative to VirtualAllocEx()
 Code injection will always require a memory buffer in the target process that is marked as executable. This is achieved either by passing the `PAGE_EXECUTE_READWRITE` constant to `VirtualAllocEx()` at allocation time, or by calling `VirtualProtect()` (with the same constant) to change the permissions on an existing memory region. Ideally, we don't want to do either of these things, because allocating memory marked as executable is a giant red flag to EDR.
@@ -150,7 +150,7 @@ Mapping activation context regions...
 
 In the output above we can see that one of the memory regions is marked as `PAGE_EXECUTE_READ`. This means that data in this region can be treated as instructions executed by the CPU, whereas regions without this protection cannot (data only). In fact, this is the `.text` section, where all of the application's actual code is stored, so of course it must be executable. If we can manage to write our shellcode somewhere in this region, we can move on to worrying about how to execute it.
 
-<hr/>
+<br/><hr/>
 
 # WriteProcessMemory()
 A keen observer will have noticed that the region's protection is `PAGE_EXECUTE_READ` instead of `PAGE_EXECUTE_READWRITE`, so how are we going to write to it? Not to worry - an undocumented feature of `WriteProcessMemory()` is that it ignores protection flags and will happily write to memory that is not marked as writable.
@@ -162,7 +162,7 @@ From MSDN: "`WriteProcessMemory()` copies the data from the specified buffer in 
 
 According to this documentation, we need to have a handle to the process which has the `PROCESS_VM_WRITE` (`0x20`) and `PROCESS_VM_OPERATION` (`0x8`) flags. When these are bitwise-OR'd together, we get `0x28`, which is what we'll pass to the call to `OpenProcess()` as the `dwDesiredAccess` parameter.
 
-<hr/>
+<br/><hr/>
 
 # Write What Where?
 The plan so far is to call `OpenProcess()` to get a handle to the notepad.exe process, then call `WriteProcessMemory()` to write shellcode somewhere in the RX region described above. But where exactly?
@@ -204,7 +204,7 @@ This is not a problem since 2048 bytes is plenty of space for most shellcode, so
 
 We know we can write starting at `0x800` bytes before the end of the RX region, so can we just hardcode that address in our call to `WriteProcessMemory()`? Of course not!
 
-<hr/>
+<br/><hr/>
 
 # Dealing with ASLR
 
@@ -238,7 +238,7 @@ Now with the base and the offset, we can do:
     IntPtr WriteAddress = NotepadBase + 0x25800;
 ```
 
-<hr/>
+<br/><hr/>
 
 # PoC #2
 Now that we can dynamically calculate the absolute address to write our shellcode to, we'll update the `Uninstall()` function to import the required functions and then call them. We won't get greedy yet by trying to call `CreateRemoteThread()` - it's better to make small incremental changes to more easily figure out what went wrong or what got detected/blocked.
@@ -280,7 +280,7 @@ Note: We're storing the shellcode in a file on disk, which is not ideal. The rea
 
 With our shellcode where we want it, we can now try to introduce and call `CreateRemoteThread()` to execute it.
 
-<hr/>
+<br/><hr/>
 
 # Fail #1
 
@@ -305,6 +305,6 @@ Rebuild, re-upload, run. And...
 
 Oh no! The introduction of `CreateRemoteThread()` is a step too far in Cortex's opinion.
 
-<hr/>
+<br/><hr/>
 
 # An Alternative to CreateRemoteThread()
