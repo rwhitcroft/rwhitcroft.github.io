@@ -299,7 +299,7 @@ We make two small updates to the C# code:
 
 <br/>
 Rebuild, re-upload, run. And...
-<br/>
+<br/><br/>
 
 ![alert](/images/alert.png)
 <p style="text-align: center; font-size: 12px;">Cortex XDR detection popup</p>
