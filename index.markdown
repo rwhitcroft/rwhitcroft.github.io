@@ -35,7 +35,7 @@ This technique has been known for years and usually consists of the following st
 - `WriteProcessMemory()` to write the shellcode into the newly-allocated buffer in the target process.
 - `CreateRemoteThread()` to create a thread in the target process whose entrypoint is the shellcode buffer.
 
-Because this technique is so well-known, nearly all AV/EDR products will closely monitor these functions using hooks. Calling these four functions in sequence will almost always cause an alert, so it's better to find different ways to achieve the same outcome. As we'll see, obtaining a reverse shell under the watchful eyes of Carbon Black and Cortex XDR was possibly using only one of the four functions above (`OpenProcess()`).
+Because this technique is so well-known, nearly all AV/EDR products will closely monitor these functions using hooks. Calling these four functions in sequence will almost always cause an alert, so it's better to find different ways to achieve the same outcome. As we'll see, obtaining a reverse shell under the watchful eyes of Carbon Black and Cortex XDR was possible using only two of the four functions above (`OpenProcess()` and `WriteProcessMemory()`).
 
 <hr/>
 
