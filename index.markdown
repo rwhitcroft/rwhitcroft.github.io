@@ -210,7 +210,7 @@ We know we can write starting at `0x800` bytes before the end of the RX region, 
 
 From Wikipedia: "Address space layout randomization (ASLR) is a computer security technique involved in preventing exploitation of memory corruption vulnerabilities. In order to prevent an attacker from reliably redirecting code execution to, for example, a particular exploited function in memory, ASLR randomly arranges the address space positions of key data areas of a process, including the base of the executable and the positions of the stack, heap and libraries."
 
-Basically, every time Windows is rebooted, ASLR randomizes the base addresses of stuff, so we need to deal with bases and offsets instead of absolute addresses. Knowing the offset of `0x800` from the end of the region is a good start; we just need to know the base address of the region.
+Basically, every time Windows is rebooted, ASLR randomizes the base addresses of stuff, so we need to deal with bases and offsets instead of absolute addresses. Knowing the offset of `0x800` from the end of the region is a good start; we just need to know the base address of the process.
 
 Conveniently, C# allows us to retrieve the base address of the notepad.exe process:
 
@@ -221,7 +221,7 @@ Conveniently, C# allows us to retrieve the base address of the notepad.exe proce
     p.StartInfo.CreateNoWindow = false;
     p.Start();
 
-    // Get the base address of notepad.exe.
+    // Get the base address of notepad.exe
     IntPtr NotepadBase = p.MainModule.BaseAddress;
 ```
 
@@ -241,7 +241,7 @@ Now with the base and the offset, we can do:
 <hr/>
 
 # PoC #2
-Now that we can dynamically calculate the absolute address to write our shellcode, we'll update the `Uninstall()` function to import the required functions and then call them. We won't get greedy yet by trying to call `CreateRemoteThread()` - it's better to make small incremental changes.
+Now that we can dynamically calculate the absolute address to write our shellcode to, we'll update the `Uninstall()` function to import the required functions and then call them. We won't get greedy yet by trying to call `CreateRemoteThread()` - it's better to make small incremental changes to more easily figure out what went wrong or what got detected/blocked.
 
 ```csharp
 [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
@@ -274,4 +274,6 @@ public override void Uninstall(IDictionary savedState)
 }
 ```
 
-Now rebuild, upload iu.exe to target system, and `installutil /u iu.exe` to trigger `Uninstall()`, and we get no alerts from Cortex. It seems we can write our shellcode to the RX region inside notepad.exe. As a reminder, writing directly to memory already marked as executable saves us from having to allocate RX memory ourselves with `VirtualAllocEx()` which is risky.
+Now rebuild, upload `iu.exe` to target system, and `installutil /u iu.exe` to trigger `Uninstall()`, and we get no alerts from Cortex. It seems we can write our shellcode to the RX region inside notepad.exe. As a reminder, writing directly to memory already marked as executable saves us from having to allocate RX memory ourselves with `VirtualAllocEx()`, which is risky.
+
+Note: We're storing the shellcode in a file on disk, which is not ideal. The reason I did this is because it saves having to rebuild and re-upload `iu.exe` if the shellcode embedded inside it changes. And since Cortex wasn't detecting the shellcode file on disk, it's not a big deal.
