@@ -44,7 +44,7 @@ Because this technique is so well-known, nearly all AV/EDR products will closely
 <hr/>
 
 # PowerShell
-The general approach with PowerShell is to import Windows API functions using the `Add-Type` cmdlet, then call them as usual from within PowerShell.
+PowerShell is fairly simple and does not require compilation or any extra tools, so it's the obvious first choice. The general approach with PowerShell is to import Windows API functions using the `Add-Type` cmdlet, then call them as usual from within PowerShell.
 
 ```powershell
 Add-Type @'
@@ -321,4 +321,11 @@ Oh no! The introduction of `CreateRemoteThread()` is a step too far in Cortex's 
 <br/>
 <hr/>
 
+# The Story So Far
+We have shellcode at a known address, but when we tried to `CreateRemoteThread()` to execute it, Cortex became uncomfortable and killed our notepad process. Creating a separate thread inside notepad to run the shellcode is nice because it has the benefit of keeping notepad alive and responsive, but is actually not necessary. After all, notepad is a sacrificial process in this scenario, so as long as our shellcode runs, we don't really care if notepad crashes afterwards.
+
+<br/>
+<hr/>
+
 # An Alternative to CreateRemoteThread()
+Instead of creating a thread to execute our shellcode, we can try to use notepad's UI functionality to make it call a specific function. For example, let's pretend there's a `ShowAbout()` function inside notepad that gets called when the user clicks Help -> About Notepad. We could modify our C# code to write our shellcode at the address of `ShowAbout()`, completely clobbering the function's instructions, then click on Help -> About Notepad to trigger the `call` to this function where our shellcode is waiting to be executed.
