@@ -295,7 +295,7 @@ With our shellcode where we want it, we can now try to introduce and call `Creat
 <br/>
 <hr/>
 
-# Fail #1
+# Failure
 
 We make two small updates to the C# code:
 
@@ -340,6 +340,40 @@ It is reasonable to assume that `ReplaceSel()` might mean "replace selection", w
 ![replacesel2](/images/replacesel2.png)
 <p style="text-align: center; font-size: 12px;">Windbg breakpoint on ReplaceSel()</p>
 
-Confirmed - we can force a call to `ReplaceSel()` by hitting the Replace button in the Replace dialog. This allows us to redirect execution flow to an address we can calculate at runtime (base plus offset) without ever having to call `CreateRemoteThread()`. Looking at the table of functions above, we can see that IDA shows `ReplaceSel()`'s address as `0x00000001400157a8`. Note that because IDA does not (cannot) take ASLR into consideration, it defaults to a base address of `0x0000000140000000`. Knowing this, we can see that the offset from notepad's base to `ReplaceSel()` is `0x157a8`.
+Confirmed - we can force a call to `ReplaceSel()` by hitting the Replace button in the Replace dialog. This allows us to redirect execution to an address we can calculate at runtime (base plus offset) without ever having to call `CreateRemoteThread()`. Looking at the table of functions above, we can see that IDA shows `ReplaceSel()`'s address as `0x00000001400157a8`. Note that because IDA does not (cannot) take ASLR into consideration, it defaults to a base address of `0x0000000140000000`. Knowing this, we can see that the offset from notepad's base to `ReplaceSel()` is `0x157a8`.
 
 It is worth pointing out that the the address of the `ReplaceSel()` function in the Windbg screenshot ends in `eb38` and not `57a8` as you might expect, since we just said its offset is `0x157a8`. This is only because IDA is showing the version of notepad.exe from the target system, while Windbg is running my local version of notepad.exe, and there's no guarantee functions will be at the same address across different versions of the same application.
+
+<br/>
+<hr/>
+
+# Skipping Ahead
+After updating the `Uninstall()` function to write the shellcode to the address of `ReplaceSel()`, then triggering the shellcode in the Replace dialog, I was able to get the MessageBox shellcode to run, and got my message box. (I do not have a screenshot of this.)
+
+This was a successful proof of concept, but it seemed incomplete until I got a reverse shell. Two more hurdles had to be overcome first.
+
+<br/>
+<hr/>
+
+# More Failure
+Because the shellcode file is stored on disk, all I had to do was replace the MessageBox shellcode file with a reverse shell shellcode file. I opted to use a custom reverse shell payload instead of one from `msfvenom` for fear that it would get caught on disk. I won't go into the custom reverse shell in this document but suffice it to say it is similar in every way except for the arrangement of bytes that would cause a pattern match.
+
+After switching to the reverse shell shellcode file, I was all set to receive my reverse shell, but notepad crashed instead. From experience, I suspected that the shellcode was too long and was clobbering code beyond the `ReverseSel()` function, causing notepad to crash. For reference, the reverse shell shellcode is about twice as long as the MessageBox shellcode.
+
+<br/>
+<hr/>
+
+# Enter Stage 2
+At this point I could have tried to find function besides `ReplaceSel()` that was long enough to take the entire shellcode without clobbering the function behind it, but it felt easier to just split it into two stages, because I liked the way it could be triggered. Instead of placing the shellcode in `ReplaceSel()`, I found another function (`CheckSave()`) that was long enough to store the entire reverse shell shellcode.
+
+Now, when `ReplaceSel()` is called, its only job is to calculate the address of `CheckSave()` and do an unconditional `jmp` to that address, where the full shellcode would run.
+
+Using IDA, I found the offset of `CheckSave()` to be `0x3690` from the base address of notepad, so the custom "stage 1" shellcode was:
+
+```asm
+    xor   eax, eax                              # zero rax
+    mov   rax, gs:[rax+0x60]                    # PEB into rax
+    mov   rax, qword ptr [rax+0x10]             # ImageBaseAddress into rax
+    add   rax, 0x3690                           # offset to CheckSave()
+    jmp   rax                                   # jmp to CheckSave()
+```
