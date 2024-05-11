@@ -201,7 +201,17 @@ Just for demonstration purposes, if we go back even further, we'll run into some
 
 This is not a problem since 2048 bytes is plenty of space for most shellcode, so we can stick with `0x800`, which is empty.
 
+We know we can write starting at `0x800` bytes before the end of the RX region, so can we just hardcode that address in our call to `WriteProcessMemory()`? Of course not!
+
 <hr/>
+
+# Dealing with ASLR
+
+From Wikipedia: "Address space layout randomization (ASLR) is a computer security technique involved in preventing exploitation of memory corruption vulnerabilities. In order to prevent an attacker from reliably redirecting code execution to, for example, a particular exploited function in memory, ASLR randomly arranges the address space positions of key data areas of a process, including the base of the executable and the positions of the stack, heap and libraries."
+
+Basically, every time Windows is rebooted, ASLR randomizes the base addresses of stuff, so we need to deal with bases and offsets instead of absolute addresses. Knowing the offset of `0x800` from the end of the region is a good start; we just need to know the base address of the region.
+
+
 
 # PoC #2
 We'll update the `Uninstall()` function to import the required functions and then call them.
