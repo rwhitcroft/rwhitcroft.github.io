@@ -335,7 +335,9 @@ While there is nothing quite as obvious as `ShowHelp()`, we can use IDA to look 
 ![replacesel](/images/replacesel.png)
 <p style="text-align: center; font-size: 12px;">IDA displaying notepad's functions</p>
 
+<br/>
 It is reasonable to assume that `ReplaceSel()` might mean "replace selection", which could be triggered when the user hits ctrl-H to do a text search/replace. We can test this assumption by setting a breakpoint on `notepad!ReplaceSel` in Windbg and then doing a search/replace:
 
+<br/>
 ![replacesel2](/images/replacesel2.png)
 <p style="text-align: center; font-size: 12px;">Windbg breakpoint on ReplaceSel()</p>
