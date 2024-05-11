@@ -444,4 +444,5 @@ The reverse shell shellcode was updated to spawn `dbg.exe` instead of `cmd.exe`,
 For me, the most interesting part of this attack was the fact that the application's logic could be taken advantage of to redirect execution flow and avoid calling `CreateRemoteThread()`, as I'd never seen this done before (although I'm sure it has been).
 
 Thanks for reading, hope you got something out of it, and feel free to reach out with any questions.
+<br/>
 -rw
