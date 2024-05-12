@@ -162,6 +162,16 @@ In the output above we can see that one of the memory regions is marked as `PAGE
 <hr/>
 
 # WriteProcessMemory()
+```c
+BOOL WriteProcessMemory(
+  [in]  HANDLE  hProcess,
+  [in]  LPVOID  lpBaseAddress,
+  [in]  LPCVOID lpBuffer,
+  [in]  SIZE_T  nSize,
+  [out] SIZE_T  *lpNumberOfBytesWritten
+);
+```
+
 A keen observer will have noticed that the region's protection is `PAGE_EXECUTE_READ` instead of `PAGE_EXECUTE_READWRITE`, so how are we going to write to it? Not to worry - an undocumented feature of `WriteProcessMemory()` is that it ignores protection flags and will happily write to memory that is not marked as writable.
 
 From MSDN: "`WriteProcessMemory()` copies the data from the specified buffer in the current process to the address range of the specified process. Any process that has a handle with `PROCESS_VM_WRITE` and `PROCESS_VM_OPERATION` access to the process to be written to can call the function."
