@@ -312,6 +312,10 @@ Note: We're storing the shellcode in a file on disk, which is not ideal. The rea
 
 With our shellcode where we want it, we can now try to introduce and call `CreateRemoteThread()` to execute it.
 
+<br/>
+<hr/>
+
+# CreateRemoteThread
 ```c
 HANDLE CreateRemoteThread(
   [in]  HANDLE                 hProcess,
@@ -323,11 +327,6 @@ HANDLE CreateRemoteThread(
   [out] LPDWORD                lpThreadId
 );
 ```
-
-<br/>
-<hr/>
-
-# Failure
 
 We make two small updates to the C# code:
 
