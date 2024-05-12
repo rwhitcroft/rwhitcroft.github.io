@@ -65,6 +65,8 @@ $hProcess = [Kernel32]::OpenProcess($Flags, $False, $Notepad.Id)
 
 While Carbon Black generally leaves PowerShell alone because it is an allowlisted application, Cortex does not. In fact, the moment the `Add-Type` cmdlet is executed with the `DllImport` directive, Cortex kills the PowerShell process. It may be possible to obfuscate the `Add-Type` arguments, but this seems like a losing battle.
 
+I did try disabling AMSI, but my guess is Cortex is using its own inspection engine and not relying on AMSI, which is probably a good decision since AMSI seems to be notoriously easy to disable. See https://amsi.fail.
+
 <br/>
 <hr/>
 
