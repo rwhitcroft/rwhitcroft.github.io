@@ -121,7 +121,7 @@ namespace IU
 ```
 <p style="text-align: center; font-size: 12px;">PoC that successfully launches notepad.exe</p>
 
-If we build this app (now known as `iu.exe`), upload it to the target system, then do `installutil /u iu.exe`, we see a new instance of notepad.exe pop up, proving that the `Uninstall()` function was executed. We can now build on this PoC to try injecting code into notepad.exe.
+When we build this app (now known as `iu.exe`), upload it to the target system, then do `installutil /u iu.exe`, we see a new instance of notepad.exe pop up, proving that the `Uninstall()` function was executed. We can now build on this PoC to try injecting code into notepad.exe.
 
 <br/>
 <hr/>
