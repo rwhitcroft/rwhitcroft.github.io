@@ -189,7 +189,15 @@ From MSDN: "`WriteProcessMemory()` copies the data from the specified buffer in 
 ![memaccess](/images/memaccess.png)
 <p style="text-align: center; font-size: 12px;">Partial list of memory protection constants</p>
 
-According to this documentation, we need to have a handle to the process which has the `PROCESS_VM_WRITE` (`0x20`) and `PROCESS_VM_OPERATION` (`0x8`) flags. When these are bitwise-OR'd together, we get `0x28`, which is what we'll pass to the call to `OpenProcess()` as the `dwDesiredAccess` parameter.
+According to this documentation, we need to have a handle to the process which has the `PROCESS_VM_WRITE` (`0x20`) and `PROCESS_VM_OPERATION` (`0x8`) flags. When these are bitwise-OR'd together, we get `0x28`, which is what we'll pass to the call to `OpenProcess()` as the `dwDesiredAccess` parameter. For reference, the function signature of `OpenProcess()` looks like this:
+
+```c
+HANDLE OpenProcess(
+  [in] DWORD dwDesiredAccess,
+  [in] BOOL  bInheritHandle,
+  [in] DWORD dwProcessId
+);
+```
 
 <br/>
 <hr/>
