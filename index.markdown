@@ -4,7 +4,7 @@ layout: default
 <br/>
 
 # What Is This?
-This is the story of getting shellcode execution and a reverse shell on a hardened host in a well-managed (and well-funded) network. Additional odds and ends related to binary exploitation may also make an appearance.
+This is the story of getting shellcode execution and a reverse shell on a hardened host in a well-managed (and well-funded) network. Additional odds and ends related to binary exploitation as well.
 
 <br/>
 <hr/>
