@@ -24,7 +24,13 @@ To monitor thread creation and image loads, it calls two more similar functions:
 When the callback function receives a notification, it performs several checks to determine whether it should allow or block the request. Non-allowlisted executables, DLLs, and drivers will always be blocked. Kernel-based inspection is more powerful than userland hooks which, in the case of [indirect syscalls](https://redops.at/en/blog/direct-syscalls-vs-indirect-syscalls), can be evaded.
 
 [PsSetCreateProcessNotifyRoutine]([https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntddk/nf-ntddk-pssetcreateprocessnotifyroutine)
+
+<br/>
+
 [PsSetCreateThreadNotifyRoutine](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntddk/nf-ntddk-pssetcreatethreadnotifyroutine)
+
+<br/>
+
 [PsSetLoadImageNotifyRoutine](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntddk/nf-ntddk-pssetloadimagenotifyroutine)
 <br/>
 <hr/>
