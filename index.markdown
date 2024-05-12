@@ -196,7 +196,7 @@ According to the output of `!address` above, the region we're interested in ends
 
 Not surprisingly, the last `0x800` bytes in this region are empty, so we could potentially write our shellcode anywhere in this area without clobbering existing code.
 
-Just for demonstration purposes, if we go back even further, we'll run into some of notepad's actual live code, so this is too far back:
+Just for demonstration purposes, if we go back even further, we'll run into some of notepad's actual live code, so this is too far back (unless we don't mind clobbering existing code which is also an option):
 ```
 0:006> db 7ff7`e7f46000-0x1000
 00007ff7`e7f45000  4c 8b 84 24 80 00 00 00-4c 8b 8c 24 88 00 00 00  L..$....L..$....
