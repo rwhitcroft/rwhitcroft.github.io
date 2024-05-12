@@ -81,7 +81,7 @@ We can't run exes. We can't load DLLs. We can't use vbscript or jscript. We can'
 
 When applications are built in C#, developers have the ability to add in two special functions: `Install()` and `Uninstall()`. These functions are never called internally, but instead are used to perform any initialization needed when installing, and any cleanup needed when uninstalling. We will focus on `Uninstall()` because it does not require administrator privileges.
 
-We are not concerned with any actual install/uninstall stuff - the only reason this is useful is because it should let us run arbitrary C# code to perform the process injection. Even though we can't run our exe, we can still put code in its `Uninstall()` function and then use `InstallUtil /u myapp.exe` to force Windows to call it for us, bypassing Carbon Black's restrictions.
+We are not concerned with any actual install/uninstall stuff - the only reason this is useful is because it should let us run arbitrary C# code to perform the process injection. Even though we can't run our exe, we can still put code in its `Uninstall()` function and then use `installutil /u myapp.exe` to force Windows to call it for us, bypassing Carbon Black's restrictions.
 
 <br/>
 <hr/>
