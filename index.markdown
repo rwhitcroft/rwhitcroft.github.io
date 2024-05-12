@@ -437,7 +437,7 @@ public override void Uninstall(IDictionary savedState)
     // Get the base address of notepad.exe.
     IntPtr NotepadBase = p.MainModule.BaseAddress;
 
-    // Open a handle to the process, request permissions.
+    // Open a handle to the process with appropriate permissions
     // (PROCESS_VM_OPERATION | PROCESS_VM_WRITE) == 0x28
     IntPtr hProcess = OpenProcess(0x28, 0, (uint)p.Id);
 
