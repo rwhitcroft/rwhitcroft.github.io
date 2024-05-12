@@ -402,7 +402,7 @@ After switching to the reverse shell shellcode file, I was all set to receive my
 <hr/>
 
 # Enter Stage 2
-At this point I could have tried to find a function besides `ReplaceSel()` that was long enough to take the entire shellcode without clobbering the function behind it, but it felt easier to just split it into two stages, because I liked the way it could be triggered. Instead of placing the shellcode in `ReplaceSel()`, I found another function (`CheckSave()`) that was long enough to store the entire reverse shell shellcode.
+At this point I could have tried to find a function besides `ReplaceSel()` that was long enough to take the entire shellcode without clobbering the function behind it, but it felt easier to just split it into two stages, because I liked the way it could be triggered through the Replace dialog. Instead of placing the shellcode in `ReplaceSel()`, I found another function (`CheckSave()`) that was long enough to store the entire reverse shell shellcode.
 
 Now, when `ReplaceSel()` is called, its only job is to calculate the address of `CheckSave()` and do an unconditional `jmp` to that address, where the full shellcode would run.
 
