@@ -288,7 +288,7 @@ public override void Uninstall(IDictionary savedState)
 }
 ```
 
-Now rebuild, upload `iu.exe` to target system, and `installutil /u iu.exe` to trigger `Uninstall()`, and we get no alerts from Cortex. It seems we can write our shellcode to the RX region inside notepad.exe. As a reminder, writing directly to memory already marked as executable saves us from having to allocate RX memory ourselves with `VirtualAllocEx()`, which is risky.
+Now rebuild, upload `iu.exe` to the target system, and `installutil /u iu.exe` to trigger `Uninstall()`, and we get no alerts from Cortex. It seems we can write our shellcode to the RX region inside notepad.exe. As a reminder, writing directly to memory already marked as executable saves us from having to allocate RX memory ourselves with `VirtualAllocEx()`, which is risky.
 
 Note: We're storing the shellcode in a file on disk, which is not ideal. The reason I did this is because it saves having to rebuild and re-upload `iu.exe` if the shellcode embedded inside it changes. And since Cortex wasn't detecting the shellcode file on disk, it's not a big deal (it's just MessageBox shellcode at this point).
 
