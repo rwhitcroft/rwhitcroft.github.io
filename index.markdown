@@ -23,9 +23,6 @@ Carbon Black's kernel driver (cbk7.sys), which is loaded at boot time, is able t
 To monitor thread creation and image loads, it calls two more similar functions: `PsSetCreateThreadNotifyRoutine()` and `PsSetLoadImageNotifyRoutine()`. (An "image" in this context usually just means a DLL.)
 When the callback function receives a notification, it performs several checks to determine whether it should allow or block the request. Unknown and non-allowlisted executables will always be blocked.
 
-![cbk7.sys](/images/psset1.png)
-<p style="text-align: center; font-size: 12px;">Disassembly pseudocode of cbk7.sys calling PsSetCreateProcessNotifyRoutine()</p>
-
 <br/>
 <hr/>
 
