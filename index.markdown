@@ -361,7 +361,7 @@ Because the shellcode file is stored on disk, all I had to do was replace the Me
 After switching to the reverse shell shellcode file, I was all set to receive my reverse shell, but notepad crashed instead. From experience, I suspected that the shellcode was too long and was clobbering code beyond the `ReplaceSel()` function, causing notepad to crash. For reference, the reverse shell shellcode is about twice as long as the MessageBox shellcode.
 
 <br/>
-<hr/>s
+<hr/>
 
 # Enter Stage 2
 At this point I could have tried to find a function besides `ReplaceSel()` that was long enough to take the entire shellcode without clobbering the function behind it, but it felt easier to just split it into two stages, because I liked the way it could be triggered. Instead of placing the shellcode in `ReplaceSel()`, I found another function (`CheckSave()`) that was long enough to store the entire reverse shell shellcode.
