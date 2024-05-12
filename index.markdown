@@ -249,7 +249,7 @@ We know we can write starting at `0x800` bytes before the end of the RX region, 
 
 From Wikipedia: "Address space layout randomization (ASLR) is a computer security technique involved in preventing exploitation of memory corruption vulnerabilities. In order to prevent an attacker from reliably redirecting code execution to, for example, a particular exploited function in memory, ASLR randomly arranges the address space positions of key data areas of a process, including the base of the executable and the positions of the stack, heap and libraries."
 
-Basically, every time Windows is rebooted, ASLR randomizes the base addresses of stuff, so we need to deal with bases and offsets instead of absolute addresses. Knowing the offset of `0x800` from the end of the region is a good start; we just need to know the base address of the process.
+Basically, every time Windows boots, ASLR randomizes the base addresses of stuff, so we need to deal with bases and offsets instead of absolute addresses. Knowing the offset of `0x800` from the end of the region is a good start; we just need to know the base address of the process.
 
 Conveniently, C# allows us to retrieve the base address of the notepad.exe process:
 
