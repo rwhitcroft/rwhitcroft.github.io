@@ -127,6 +127,16 @@ If we build this app (now known as `iu.exe`), upload it to the target system, th
 <hr/>
 
 # An Alternative to VirtualAllocEx()
+```c
+LPVOID VirtualAllocEx(
+  [in]           HANDLE hProcess,
+  [in, optional] LPVOID lpAddress,
+  [in]           SIZE_T dwSize,
+  [in]           DWORD  flAllocationType,
+  [in]           DWORD  flProtect
+);
+```
+
 Code injection will always require a memory buffer in the target process that is marked as executable. This is achieved either by passing the `PAGE_EXECUTE_READWRITE` constant to `VirtualAllocEx()` at allocation time, or by calling `VirtualProtect()` (with the same constant) to change the permissions on an existing memory region. Ideally, we don't want to do either of these things, because allocating memory marked as executable is a giant red flag to EDR.
 
 We'll give Cortex its due credit by not even attempting the traditional steps described in the previous section. Instead, we'll use Windbg to examine the memory regions in the notepad.exe process (the injection target).
