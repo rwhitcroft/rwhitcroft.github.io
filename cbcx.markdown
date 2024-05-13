@@ -434,7 +434,7 @@ public override void Uninstall(IDictionary savedState)
     p.StartInfo.CreateNoWindow = false;
     p.Start();
 
-    // Get the base address of notepad.exe.
+    // Get the base address of notepad.exe
     IntPtr NotepadBase = p.MainModule.BaseAddress;
 
     // Open a handle to the process with appropriate permissions
