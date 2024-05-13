@@ -386,7 +386,7 @@ It is worth pointing out that the the address of the `ReplaceSel()` function in 
 <hr/>
 
 # Skipping Ahead
-After updating the `Uninstall()` function to write the shellcode to the address of `ReplaceSel()`, then triggering the shellcode in the Replace dialog, I was able to get the MessageBox shellcode to run, and got my message box. (I do not have a screenshot of this.)
+After updating the `Uninstall()` function to write the shellcode to the address of `ReplaceSel()`, then triggering the shellcode in the Replace dialog, I was able to get the MessageBox shellcode to run, and got my message box.
 
 This was a successful proof of concept, but it seemed incomplete until I got a reverse shell. Two more hurdles had to be overcome first.
 
