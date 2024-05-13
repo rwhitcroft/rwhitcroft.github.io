@@ -10,7 +10,7 @@ This is the story of getting shellcode execution and a reverse shell on a harden
 <hr/>
 
 # Environment
-The target host is a fully-patched Windows 10 workstation with Carbon Black and Cortex XDR.
+The target host is a fully patched Windows 10 workstation with Carbon Black and Cortex XDR.
 - <b>Carbon Black</b>: Aggressive software restriction - prevents execution of unknown executables, including DLLs, VB/JS scripts, and drivers. PowerShell is allowed since it is part of the Windows base system, but see below.
 - <b>Cortex XDR</b>: Sophisticated endpoint protection, very effective at detecting and blocking threats.
 
@@ -22,7 +22,7 @@ Carbon Black's kernel driver (cbk7.sys), which is loaded at boot time, is able t
 
 To monitor thread creation and image loads, it calls two more similar functions: `PsSetCreateThreadNotifyRoutine()` and `PsSetLoadImageNotifyRoutine()`. (An "image" in this context usually just means a DLL.)
 
-When the callback function receives a notification, it performs several checks to determine whether it should allow or block the request. Non-allowlisted executables, DLLs, and drivers will always be blocked. Kernel-based inspection is more powerful than userland hooks which, in the case of [indirect syscalls](https://redops.at/en/blog/direct-syscalls-vs-indirect-syscalls), can be evaded.
+When the callback function receives a notification, it performs several checks to determine whether it should allow or block the request. Non-allow listed executables, DLLs, and drivers will always be blocked. Kernel-based inspection is more powerful than userland hooks which, in the case of [indirect syscalls](https://redops.at/en/blog/direct-syscalls-vs-indirect-syscalls), can be evaded.
 
 <br/>
 <hr/>
@@ -33,7 +33,7 @@ The goal is to run arbitrary code on the host to get a reverse shell. Since cust
 This technique has been known for years and usually consists of the following steps:
 - `OpenProcess()` to get a handle to the target process.
 - `VirtualAllocEx()` to allocate a read-write-execute buffer in the target process.
-- `WriteProcessMemory()` to write the shellcode into the newly-allocated buffer in the target process.
+- `WriteProcessMemory()` to write the shellcode into the newly allocated buffer in the target process.
 - `CreateRemoteThread()` to create a thread in the target process whose entrypoint is the shellcode buffer.
 
 Because this technique is so well-known, nearly all AV/EDR products will closely monitor these functions using hooks. Calling these four functions in sequence will almost always get you caught, so it's better to find different ways to achieve the same outcome. As we'll see, obtaining a reverse shell under Carbon Black and Cortex XDR was possible using only two of the four functions above (`OpenProcess()` and `WriteProcessMemory()`), lowering the likelihood of detection.
@@ -69,7 +69,7 @@ I did try disabling AMSI, but my guess is Cortex is using its own inspection eng
 <hr/>
 
 # The Story So Far
-We can't run exes. We can't load DLLs. We can't use vbscript or jscript. We can't use PowerShell to import Windows functions. Fortunately, there is one avenue left to explore that may allow us import and call the Windows APIs above needed to inject code.
+We can't run exes. We can't load DLLs. We can't use VBScript or JScript. We can't use PowerShell to import Windows functions. Fortunately, there is one avenue left to explore that may allow us import and call the Windows APIs above needed to inject code.
 
 <br/>
 <hr/>
@@ -121,7 +121,7 @@ namespace IU
 ```
 <p style="text-align: center; font-size: 12px;">PoC that successfully launches notepad.exe</p>
 
-When we build this app (now known as `iu.exe`), upload it to the target system, then do `installutil /u iu.exe`, we see a new instance of notepad.exe pop up, proving that the `Uninstall()` function was executed. We can now build on this PoC to try injecting code into notepad.exe.
+When we build this app (now known as `iu.exe`), upload it to the target system, then do `installutil /u iu.exe`, we see a new instance of notepad.exe pop-up, proving that the `Uninstall()` function was executed. We can now build on this PoC to try injecting code into notepad.exe.
 
 <br/>
 <hr/>
@@ -205,7 +205,7 @@ HANDLE OpenProcess(
 # Write What Where?
 The plan so far is to call `OpenProcess()` to get a handle to the notepad.exe process, then call `WriteProcessMemory()` to write shellcode somewhere in the RX region described above. But where exactly?
 
-When the compiler builds an .exe, it allocates the memory regions in chunks. This means that most of the time there will be an area at the end of the region that is empty, and is the perfect place to store code without clobbering any existing functions/instructions which may crash the application. This is known as a "code cave".
+When the compiler builds an .exe, it allocates the memory regions in chunks. This means that most of the time there will be an area at the end of the region that is empty and is the perfect place to store code without clobbering any existing functions/instructions which may crash the application. This is known as a "code cave".
 
 According to the output of `!address` above, the region we're interested in ends at address `0x7ff7e7f46000`, so let's examine the memory just before the ending address. We can start with `0x800` (`2048`) bytes as a guess:
 
@@ -360,7 +360,7 @@ Oh no! The introduction of `CreateRemoteThread()` is a step too far in Cortex's 
 <hr/>
 
 # The Story So Far
-We have shellcode at a known address, but when we tried to `CreateRemoteThread()` to execute it, Cortex became uncomfortable and killed our notepad process. Creating a separate thread inside notepad to run the shellcode is nice because it has the benefit of keeping notepad alive and responsive, but is actually not necessary. After all, notepad is a sacrificial process in this scenario, so as long as our shellcode runs, we don't really care if notepad crashes afterwards.
+We have shellcode at a known address, but when we tried to `CreateRemoteThread()` to execute it, Cortex became uncomfortable and killed our notepad process. Creating a separate thread inside notepad to run the shellcode is nice because it has the benefit of keeping notepad alive and responsive, but is actually not necessary. After all, notepad is a sacrificial process in this scenario, so as long as our shellcode runs, we don't really care if notepad crashes afterward.
 
 <br/>
 <hr/>
@@ -461,7 +461,7 @@ public override void Uninstall(IDictionary savedState)
 <hr/>
 
 # One Last Thing
-Again ready to finally receive my reverse shell, running `installutil /u iu.exe` caused the dreaded Cortex popup. Again from experience, I suspected that Cortex was not loving the fact that `cmd.exe` was spawned with network sockets as its stdin and stdout handles.
+This time running `installutil /u iu.exe` caused the dreaded Cortex pop-up. Again from experience, I suspected that Cortex was not loving the fact that `cmd.exe` was spawned with network sockets as its stdin and stdout handles.
 
 Fortunately, this was a quick fix.
 
