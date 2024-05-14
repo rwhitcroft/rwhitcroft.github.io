@@ -313,7 +313,7 @@ public override void Uninstall(IDictionary savedState)
 }
 ```
 
-Now rebuild, upload `iu.exe` to the target system, and `installutil /u iu.exe` to trigger `Uninstall()`, and we get no alerts from Cortex. It seems we can write our shellcode to the RX region inside notepad.exe. As a reminder, writing directly to memory already marked as executable saves us from having to allocate RX memory ourselves with `VirtualAllocEx()`, which is risky.
+Now rebuild, upload `iu.exe` to the target system, and `installutil /u iu.exe` to trigger `Uninstall()`, and we get no alerts from Cortex. It seems we can write our shellcode to the code cave inside notepad.exe. As a reminder, writing directly to memory already marked as executable saves us from having to allocate RX memory ourselves with `VirtualAllocEx()`, which is risky.
 
 Note: We're storing the shellcode in a file on disk, which is not ideal. The reason I did this is because it saves having to rebuild and re-upload `iu.exe` if the shellcode embedded inside it changes. And since Cortex wasn't detecting the shellcode file on disk, it's not a big deal (it's just MessageBox shellcode at this point).
 
@@ -356,7 +356,7 @@ Rebuild, re-upload, run. And...
 
 Oh no! The introduction of `CreateRemoteThread()` is a step too far in Cortex's opinion. This means that putting our shellcode in a code cave won't work because we have no way of redirecting execution to that address, since our plan was to use `CreateRemoteThread()` and pass it an entrypoint pointing at the code cave.
 
-Additionally, the [Control Flow Guard](https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard) mitigation was enabled on this host, which would likely have prevented this anyway.
+Additionally, as I realized much later when I looked at the host's exploit mitigation settings, the [Control Flow Guard](https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard) mitigation was enabled, which would likely have prevented this anyway.
 
 <br/>
 <hr/>
