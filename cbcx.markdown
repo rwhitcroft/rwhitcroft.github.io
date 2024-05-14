@@ -202,7 +202,7 @@ HANDLE OpenProcess(
 <br/>
 <hr/>
 
-# Write What Where?
+# Code Cave
 The plan so far is to call `OpenProcess()` to get a handle to the notepad.exe process, then call `WriteProcessMemory()` to write shellcode somewhere in the RX region described above. But where exactly?
 
 When the compiler builds an .exe, it allocates the memory regions in chunks. This means that most of the time there will be an area at the end of the region that is empty and is the perfect place to store code without clobbering any existing functions/instructions which may crash the application. This is known as a "code cave".
@@ -240,7 +240,7 @@ Just for demonstration purposes, if we go back even further, we'll run into some
 
 This is not a problem since 2048 bytes is plenty of space for most shellcode, so we can stick with `0x800`, which is empty.
 
-We know we can write starting at `0x800` bytes before the end of the RX region, so can we just hardcode that address in our call to `WriteProcessMemory()`? Of course not!
+We know we can write starting at `0x800` bytes before the end of the RX region (our code cave), so can we just hardcode that address in our call to `WriteProcessMemory()`? Of course not!
 
 <br/>
 <hr/>
@@ -270,7 +270,7 @@ We just need to calculate the offset from the base address of notepad.exe to `0x
 Evaluate expression: 153600 = 00000000`00025800
 ```
 
-Now with the base and the offset, we can do:
+Now with the base and the offset, we can calculate the absolute address of the code cave with:
 ```csharp
     IntPtr NotepadBase = p.MainModule.BaseAddress;
     IntPtr WriteAddress = NotepadBase + 0x25800;
