@@ -121,7 +121,7 @@ namespace IU
 ```
 <p style="text-align: center; font-size: 12px;">PoC that successfully launches notepad.exe</p>
 
-When we build this app (now known as `iu.exe`), upload it to the target system, then do `installutil /u iu.exe`, we see a new instance of notepad.exe pop-up, proving that the `Uninstall()` function was executed. We can now build on this PoC to try injecting code into notepad.exe.
+When we build this app (now known as `iu.exe`), upload it to the target system, then do `installutil /u iu.exe`, we see a new instance of notepad.exe pop up, proving that the `Uninstall()` function was executed. We can now build on this PoC to try injecting code into notepad.exe.
 
 <br/>
 <hr/>
@@ -299,7 +299,7 @@ public override void Uninstall(IDictionary savedState)
     p.StartInfo.CreateNoWindow = false;
     p.Start();
 
-    // Get the base address of notepad.exe and add the offset to the RX region
+    // Get the base address of notepad.exe and add the offset to the RX region (code cave)
     IntPtr NotepadBase = p.MainModule.BaseAddress;
     IntPtr WriteAddress = NotepadBase + 0x25800;
 
@@ -354,13 +354,13 @@ Rebuild, re-upload, run. And...
 
 ![alert](/images/alert.png)
 
-Oh no! The introduction of `CreateRemoteThread()` is a step too far in Cortex's opinion.
+Oh no! The introduction of `CreateRemoteThread()` is a step too far in Cortex's opinion. This means that putting our shellcode in a code cave won't work because we have no way of redirecting execution to that address. Additionally, the [Control Flow Guard (CFG)](https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard) mitigation was enabled on this host, which would likely have prevented this anyway.
 
 <br/>
 <hr/>
 
 # The Story So Far
-We have shellcode at a known address, but when we tried to `CreateRemoteThread()` to execute it, Cortex became uncomfortable and killed our notepad process. Creating a separate thread inside notepad to run the shellcode is nice because it has the benefit of keeping notepad alive and responsive, but is actually not necessary. After all, notepad is a sacrificial process in this scenario, so as long as our shellcode runs, we don't really care if notepad crashes afterward.
+We have our shellcode in a code cave at a known address, but when we tried to `CreateRemoteThread()` to execute it, Cortex became uncomfortable and killed our notepad process. Creating a separate thread inside notepad to run the shellcode is nice because it has the benefit of keeping notepad alive and responsive, but is actually not necessary. After all, notepad is a sacrificial process in this scenario, so as long as our shellcode runs, we don't really care if notepad crashes afterward.
 
 <br/>
 <hr/>
