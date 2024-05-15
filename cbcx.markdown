@@ -404,7 +404,7 @@ After switching to the reverse shell shellcode file, I was all set to receive my
 <hr/>
 
 # Enter Stage 2
-At this point I could have tried to find a function besides `ReplaceSel()` that was long enough to take the entire shellcode without clobbering the function behind it, but it felt easier to just split it into two stages, because I liked the way it could be triggered through the Replace dialog. Instead of placing the shellcode in `ReplaceSel()`, I found another function (`CheckSave()`) that was long enough to store the entire reverse shell shellcode.
+At this point I could have tried to find a function besides `ReplaceSel()` that was long enough to take the entire shellcode without clobbering the function behind it, but it felt easier to just split it into two stages because I liked the way it could be triggered through the Replace dialog. Instead of placing the shellcode in `ReplaceSel()`, I found another function (`CheckSave()`) that was long enough to store the entire reverse shell shellcode.
 
 Now, when `ReplaceSel()` is called, its only job is to calculate the address of `CheckSave()` and do an unconditional `jmp` to that address, where the full shellcode would run.
 
@@ -463,16 +463,16 @@ public override void Uninstall(IDictionary savedState)
 <hr/>
 
 # One Last Thing
-This time running `installutil /u iu.exe` caused the dreaded Cortex pop-up. Again from experience, I suspected that Cortex was not loving the fact that `cmd.exe` was spawned with network sockets as its stdin and stdout handles.
+This time running `installutil /u iu.exe` caused the dreaded Cortex pop-up. Again from experience, I suspected that Cortex was not loving the fact that `cmd.exe` was spawned with a network socket as its stdin and stdout handles.
 
-Fortunately, this was a quick fix.
+Fortunately, this was a quick fix because Cortex is likely only performing this check for command interpreters like `cmd.exe` and `powershell.exe` which means `dbg.exe` should slip under the radar.
 
 ```
 C:\Windows\system32>copy cmd.exe dbg.exe
         1 file(s) copied.
 ```
 
-The reverse shell shellcode was updated to spawn `dbg.exe` instead of `cmd.exe`, and one last `installutil /u iu.exe` ...
+The reverse shell shellcode was updated to spawn `dbg.exe` instead of `cmd.exe`, `installutil /u iu.exe` was run, and after hitting the Replace button ...
 
 <br/>
 <hr/>
