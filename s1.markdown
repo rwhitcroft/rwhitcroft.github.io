@@ -20,6 +20,19 @@ SentinelOne is widely adopted across various industries due to its effectiveness
 <hr/>
 
 ## What is the vulnerability?
-The vulnerability exists because S1 does not prevent a process from writing to the agent DLL's memory
+Whenever a new process is created, the kernel injects a DLL into it. This DLL is named `InProcessClient64.dll` on x64 systems or `InProcessClient32.dll` on x86 systems. This article will focus only on the x64 version.
+
+```
+0:000> lm
+start             end                 module name
+00007ff6`2e580000 00007ff6`2e5da000   notepad    (deferred)             
+00007ffd`f8c10000 00007ffd`f8ea2000   COMCTL32   (deferred)             
+**00007ffe`14a80000 00007ffe`14e96000   InProcessClient64   (deferred)**
+00007ffe`151e0000 00007ffe`15208000   bcrypt     (deferred)             
+00007ffe`15380000 00007ffe`15491000   ucrtbase   (deferred)             
+00007ffe`154a0000 00007ffe`1585a000   KERNELBASE   (deferred)             
+...snip...
+```
+
 
 <hr/>
