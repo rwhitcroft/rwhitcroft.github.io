@@ -4,13 +4,11 @@ layout: default
 <br/>
 # SentinelOne Agent Bypass
 <hr/>
-<br/>
 
 ## What is this?
 This is a write-up describing the discovery and exploitation of a vulnerability in SentinelOne ("S1").
 
 <hr/>
-<br/>
 
 ## What is SentinelOne?
 SentinelOne is a cybersecurity platform known for its robust Endpoint Detection and Response (EDR) capabilities. It utilizes AI and machine learning to deliver real-time threat detection, automated response, and full visibility into endpoint activities.
@@ -20,7 +18,6 @@ SentinelOne is widely adopted across various industries due to its effectiveness
 *(ChatGPT)*
 
 <hr/>
-<br/>
 
 ## What is the vulnerability?
 The vulnerability exists because S1 does not prevent a process from writing to the agent DLL's memory
