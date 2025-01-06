@@ -8,6 +8,7 @@ layout: default
 ## What is this?
 This is a write-up describing the discovery and exploitation of a vulnerability in Sentinel Agent ("S1"), the in-process monitoring component of the SentinelOne platform.
 
+<br/>
 <hr/>
 
 ## What is SentinelOne?
@@ -17,11 +18,13 @@ SentinelOne is widely adopted across various industries due to its effectiveness
 
 *(ChatGPT)*
 
+<br/>
 <hr/>
 
 ## What is the vulnerability?
 Successful exploitation of the vulnerability blinds the in-process detection, meaning you can run even the most toxic shellcode (e.g., meterpreter) without it getting detected. You can also remotely blind processes and inject into them, also without detection.
 
+<br/>
 <hr/>
 
 ## What is "in-process detection"?
@@ -66,11 +69,13 @@ start             end                 module name
         LegalCopyright:   SentinelOne, Inc.
 ```
 
+<br/>
 <hr/>
 
 ## But what exactly is InProcessClient64.dll doing?
 I don't really know. A lot. Fortunately, developing this exploit did not require a deep understanding of how the DLL works or how it fits into the complex S1 platform, just that certain functions in the DLL are called at certain times. This was enough to give me an idea on how to approach exploiting it.
 
+<br/>
 <hr/>
 
 ## What was the idea?
@@ -139,6 +144,7 @@ When I ran the updated PoC in WinDbg, I was able to verify that the protection f
 
 ![VirtualProtect](/images/vprotect.png)
 
+<br/>
 <hr/>
 
 ## So what now?
