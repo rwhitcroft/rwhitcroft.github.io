@@ -67,3 +67,8 @@ start             end                 module name
 ```
 
 <hr/>
+
+## What exactly does InProcessClient64.dll do?
+I don't really know. A lot.
+
+<hr/>
