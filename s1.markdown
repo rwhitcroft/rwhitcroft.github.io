@@ -6,7 +6,7 @@ layout: default
 <hr/>
 
 ## What is this?
-This is a write-up describing the discovery and exploitation of a vulnerability in SentinelOne ("S1").
+This is a write-up describing the discovery and exploitation of a vulnerability in Sentinel Agent ("S1"), the in-process monitoring component of the SentinelOne platform.
 
 <hr/>
 
@@ -38,6 +38,30 @@ start             end                 module name
 00007ffe`15380000 00007ffe`15491000   ucrtbase   (deferred)             
 00007ffe`154a0000 00007ffe`1585a000   KERNELBASE   (deferred)             
 ...snip...
+```
+
+We can get some information about the DLL:
+```
+0:000> lmDvm InProcessClient64
+start             end                 module name
+00007ffe`14a80000 00007ffe`14e96000   InProcessClient64   (deferred)             
+    Image path: C:\Program Files\SentinelOne\Sentinel Agent 24.1.4.257\InProcessClient64.dll
+    Image name: InProcessClient64.dll
+    Timestamp:        Thu Sep 26 15:37:12 2024 (66F5B7E8)
+    CheckSum:         0040B65F
+    ImageSize:        00416000
+    File version:     24.1.4.257
+    Product version:  24.1.4.257
+    File type:        2.0 Dll
+    Information from resource tables:
+        CompanyName:      SentinelOne, Inc.
+        ProductName:      Sentinel Agent
+        InternalName:     WinHostDll
+        OriginalFilename: WinHostDll.dll
+        ProductVersion:   24.1.4.257
+        FileVersion:      24.1.4.257
+        FileDescription:  WinAgentHostDll
+        LegalCopyright:   SentinelOne, Inc.
 ```
 
 <hr/>
