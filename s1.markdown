@@ -144,7 +144,7 @@ When I ran the updated PoC in WinDbg, I was able to verify that the protection f
 
 ![VirtualProtect](/images/vprotect.png)
 
-With the protection changed, I should now be able to write artbirary values (bytes) to the address of the entrypoint. When I did this originally, I fulled expected S1 to intervene and kill my process. I don't have a guess as to why S1 allows you to do this.
+With the protection changed, I should now be able to write artbirary values to the address of the entrypoint. When I did this originally, I fully expected S1 to intervene and kill my process. I don't have a guess as to why S1 allows you to do this.
 
 <br/>
 <hr/>
