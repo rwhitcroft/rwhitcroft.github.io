@@ -109,6 +109,47 @@ Here is the code that loops through the loaded modules and looks for the one we'
     }
 ```
 
-Now that I had the base address of the DLL, I could try actually writing to its memory. But where? As the write target, I chose `DllMain()`, the default entrypoint for all DLLs. To find the location of this function, I used IDA Pro, which showed its offset as `0x32b0`, which means its virtual address is `0x32b0` plus the base address I just obtained.
+Now that I had the base address of the DLL, I could try actually writing to its memory. But where? As the write target, I chose `DllMain()`, the default entrypoint for DLLs. To find the location of this function, I used IDA Pro, which showed its offset as `0x32b0`, which means its virtual address is `0x32b0` plus the base address I just obtained. (For some reason IDA Pro is calling this function `DllEntryPoint()`. I don't know what that's about.)
 
 ![DllMain](/images/dllmain.png)
+
+But first things first - before I could write memory, I needed to set the memory protection of this address to actually allow writing, since this region is marked as `PAGE_EXECUTE_READ` as can be seen in Windbg:
+
+```
+0:000> !address inprocessclient64+32b0
+...snip...
+Usage:                  Image
+Base Address:           00007ffb`87571000
+End Address:            00007ffb`877b4000
+Region Size:            00000000`00243000 (   2.262 MB)
+State:                  00001000          MEM_COMMIT
+Protect:                00000020          PAGE_EXECUTE_READ
+...snip...
+```
+
+To modify memory protection, I used the `VirtualProtect()` Windows API. This function accepts the address whose protection you want to change, how many bytes, the new protection constant, and a place to store the old protection constant which is useful if you want to set it back to its original value when you're done, which I did.
+
+So I modified the PoC to include the following code:
+
+```c
+    QWORD base = (QWORD)modInfo.lpBaseOfDll;
+    QWORD entrypoint = base + 0x32b0;
+    DWORD oldProtect = 0;
+
+    printf("Write target: 0x%llx\n", (QWORD)entrypoint);
+
+    if (VirtualProtect((LPVOID)entrypoint, 1, PAGE_READWRITE, &oldProtect))
+    {
+        printf("Success!\n");
+        VirtualProtect((LPVOID)entrypoint, 1, oldProtect, &oldProtect)
+    }
+```
+
+When I ran the updated PoC in WinDbg, I was able to verify that the protection for the target address had been changed to `PAGE_READWRITE`:
+
+![VirtualProtect](/images/vprotect.png)
+
+<hr/>
+
+## So what now?
+More stuff.
