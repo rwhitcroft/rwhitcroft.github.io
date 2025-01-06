@@ -20,8 +20,14 @@ SentinelOne is widely adopted across various industries due to its effectiveness
 <hr/>
 
 ## What is the vulnerability?
-Whenever a new process is created, the kernel injects a DLL into it. This DLL is named `InProcessClient64.dll` on x64 systems or `InProcessClient32.dll` on x86 systems. This article will focus only on the x64 version.
+Successful exploitation of the vulnerability blinds the in-process detection, meaning you can run even the most toxic shellcode (e.g., meterpreter) without it getting detected. You can also remotely blind processes and inject into them, also without detection.
 
+<hr/>
+
+## How does the vulnerability work?
+Whenever a new process is created, the kernel injects a DLL into it. This DLL is named `InProcessClient64.dll` on x64 systems and its purpose is to monitor the process for threats. It performs numerous timer- or event-driven tasks such as scanning memory for threats and watching for suspicious memory allocations and network connections.
+
+If we use WinDbg to debug notepad.exe, we can see it loaded alongside all the other modules in the process:
 ```
 0:000> lm
 start             end                 module name
