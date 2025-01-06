@@ -4,7 +4,9 @@ layout: default
 <br/>
 
 # What Is This?
-This is the story of getting shellcode execution and a reverse shell on a hardened host in a well-managed (and well-funded) network. Additional odds and ends related to binary exploitation as well.
+This is the story of getting shellcode execution and a reverse shell on a hardened host in a well-managed (and well-funded) network.
+
+Note that this was primarily an opportunity for me to apply the various techniques I've learned from the courses I've taken recently. The process described here is somewhat contrived, and getting a shell when you already have desktop access is not especially useful, but hopefully there should still be some takeaways if this is a topic that interests you.
 
 <br/>
 <hr/>
@@ -20,15 +22,15 @@ The target host is a fully patched Windows 10 workstation with Carbon Black and 
 # Carbon Black Kernel Driver
 Carbon Black's kernel driver (cbk7.sys), which is loaded at boot time, is able to inspect process creation by calling the `PsSetCreateProcessNotifyRoutine()` Windows API. From MSDN: "The PsSetCreateProcessNotifyRoutine routine adds a driver-supplied callback routine to, or removes it from, a list of routines to be called whenever a process is created or deleted."
 
-To monitor thread creation and image loads, it calls two more similar functions: `PsSetCreateThreadNotifyRoutine()` and `PsSetLoadImageNotifyRoutine()`. (An "image" in this context usually just means a DLL.)
+To monitor thread creation and image loads, it calls two more similar functions: `PsSetCreateThreadNotifyRoutine()` and `PsSetLoadImageNotifyRoutine()`. (An "image" in this context just means a DLL.)
 
-When the callback function receives a notification, it performs several checks to determine whether it should allow or block the request. Non-allowlisted executables, DLLs, and drivers will always be blocked. Kernel-based inspection is more powerful than userland hooks which, in the case of [indirect syscalls](https://redops.at/en/blog/direct-syscalls-vs-indirect-syscalls), can be evaded.
+When the callback function receives a notification, it performs several checks to determine whether it should allow or block the request. Non-allowlisted executables and DLLs will always be blocked.
 
 <br/>
 <hr/>
 
 # Approach
-The goal is to run arbitrary code on the host to get a reverse shell. Since custom executables, DLLs, and scripts are blocked by Carbon Black, we can try injecting code into an existing process (or one that we're allowed to launch such as notepad since it's a Windows base application). This method is sometimes called "fork & run" where a process is started whose only purpose is to receive an injection of code.
+The goal is to run arbitrary code on the host to get a reverse shell. Since custom executables, DLLs, and scripts are blocked by Carbon Black, we can try injecting code into an existing process, or one that we're allowed to launch such as notepad since it's a Windows base application. This method is sometimes called "fork & run" where a process is started whose only purpose is to receive an injection of code.
 
 This technique has been known for years and usually consists of the following steps:
 - `OpenProcess()` to get a handle to the target process.
@@ -36,7 +38,7 @@ This technique has been known for years and usually consists of the following st
 - `WriteProcessMemory()` to write the shellcode into the newly allocated buffer in the target process.
 - `CreateRemoteThread()` to create a thread in the target process whose entrypoint is the shellcode buffer.
 
-Because this technique is so well-known, nearly all AV/EDR products will closely monitor these functions using hooks. Calling these four functions in sequence will almost always get you caught, so it's better to find different ways to achieve the same outcome. As we'll see, obtaining a reverse shell under Carbon Black and Cortex XDR was possible using only two of the four functions above (`OpenProcess()` and `WriteProcessMemory()`), lowering the likelihood of detection.
+Because this technique is so well-known, nearly all AV/EDR products will closely monitor these functions using hooks. Calling these four functions in sequence will usually result in a detection, so it's better to find different ways to achieve the same outcome. As we'll see, obtaining a reverse shell under Carbon Black and Cortex XDR was possible using only two of the four functions above (`OpenProcess()` and `WriteProcessMemory()`).
 
 <br/>
 <hr/>
@@ -63,23 +65,23 @@ $hProcess = [Kernel32]::OpenProcess($Flags, $False, $Notepad.Id)
 
 While Carbon Black generally leaves PowerShell alone because it is an allowlisted application, Cortex does not. In fact, the moment the `Add-Type` cmdlet is executed with the `DllImport` directive, Cortex kills the PowerShell process. It may be possible to obfuscate the `Add-Type` arguments, but this seems like a losing battle.
 
-I did try disabling AMSI, but my guess is Cortex is using its own inspection engine and not relying on AMSI, which is probably a good decision since AMSI is notoriously easy to disable. See [https://amsi.fail](https://amsi.fail).
+I did try disabling AMSI, but Cortex seems to be using its own inspection engine and not relying on AMSI, which is probably a good decision since AMSI is notoriously easy to disable. See [https://amsi.fail](https://amsi.fail).
 
 <br/>
 <hr/>
 
 # The Story So Far
-We can't run exes. We can't load DLLs. We can't use VBScript or JScript. We can't use PowerShell to import Windows functions. Fortunately, there is one avenue left to explore that may allow us import and call the Windows APIs above needed to inject code.
+We can't run exes. We can't load DLLs. We can't use VBScript or JScript. We can't use PowerShell to import Windows functions. Fortunately, there is one avenue left to explore that may allow us import and call the Windows APIs above needed to run shellcode.
 
 <br/>
 <hr/>
 
 # InstallUtil
-`InstallUtil` is a Windows base application that is used for installing and uninstalling software. The only functionality we care about is its `/u` option which is used to uninstall applications.
+`InstallUtil` is a Windows base application that is used for installing and uninstalling software. Its only functionality we're interested in is its `/u` option which is used to uninstall applications.
 
 When applications are built in C#, developers have the ability to add in two special functions: `Install()` and `Uninstall()`. These functions are never called internally, but instead are used to perform any initialization needed when installing, and any cleanup needed when uninstalling. We will focus on `Uninstall()` because it does not require administrator privileges.
 
-We are not concerned with any actual install/uninstall stuff - the only reason this is useful is because it should let us run arbitrary C# code to perform the process injection. Even though we can't run our exe, we can still put code in its `Uninstall()` function and then use `installutil /u myapp.exe` to force Windows to call it for us, bypassing Carbon Black's restrictions.
+We are of course not concerned with actually uninstalling anything - the only reason this is useful is because it should let us run arbitrary C# code to perform the process injection. Even though we can't run our exe directly, we can still put code in the `Uninstall()` function and then use `installutil /u myapp.exe` to force Windows to call it for us, bypassing Carbon Black's restrictions.
 
 <br/>
 <hr/>
@@ -121,7 +123,7 @@ namespace IU
 ```
 <p style="text-align: center; font-size: 12px;">PoC that successfully launches notepad.exe</p>
 
-When we build this app (now known as `iu.exe`), upload it to the target system, then do `installutil /u iu.exe`, we see a new instance of notepad.exe pop up, proving that the `Uninstall()` function was executed. We can now build on this PoC to try injecting code into notepad.exe.
+When we build this app (now referred to as `iu.exe`), upload it to the target system, then do `installutil /u iu.exe`, we see a new instance of notepad.exe pop up, proving that the `Uninstall()` function was executed. We can now build on this PoC to try injecting code into notepad.exe.
 
 <br/>
 <hr/>
@@ -137,7 +139,7 @@ LPVOID VirtualAllocEx(
 );
 ```
 
-Code injection will always require a memory buffer in the target process that is marked as executable. This is achieved either by passing the `PAGE_EXECUTE_READWRITE` constant to `VirtualAllocEx()` at allocation time, or by calling `VirtualProtect()` (with the same constant) to change the permissions on an existing memory region. Ideally, we don't want to do either of these things, because allocating memory marked as executable is a giant red flag to EDR.
+Code injection will always require a memory buffer in the target process that is marked as executable. This is achieved either by passing the `PAGE_EXECUTE_READWRITE` constant to `VirtualAllocEx()` at allocation time, or by calling `VirtualProtect()` (with the same constant) to change the permissions on an existing memory region. Ideally, we don't want to do either of these things, because allocating memory marked as executable is a red flag to EDR.
 
 We'll give Cortex its due credit by not even attempting the traditional steps described in the previous section. Instead, we'll use Windbg to examine the memory regions in the notepad.exe process (the injection target).
 
@@ -166,7 +168,7 @@ Mapping activation context regions...
 ```
 <p style="text-align: center; font-size: 12px;">Output of the Windbg !address command (edited for brevity)</p>
 
-In the output above we can see that one of the memory regions is marked as `PAGE_EXECUTE_READ`. This means that data in this region can be treated as instructions executed by the CPU, whereas regions without this protection cannot (data only). In fact, this is the `.text` section, where all of the application's actual code is stored, so of course it must be executable. If we can manage to write our shellcode somewhere in this region, we can move on to worrying about how to execute it.
+In the output above we can see that one of the memory regions is marked as `PAGE_EXECUTE_READ`. This means that data in this region can be treated as instructions executed by the CPU, whereas regions without this protection cannot. If we can manage to write our shellcode somewhere in this region, we can move on to worrying about how to execute it.
 
 <br/>
 <hr/>
@@ -182,14 +184,14 @@ BOOL WriteProcessMemory(
 );
 ```
 
-A keen observer will have noticed that the region's protection is `PAGE_EXECUTE_READ` instead of `PAGE_EXECUTE_READWRITE`, so how are we going to write to it? Not to worry - an undocumented feature of `WriteProcessMemory()` is that it ignores protection flags and will happily write to memory that is not marked as writable.
+You may have noticed that the region's protection is `PAGE_EXECUTE_READ` instead of `PAGE_EXECUTE_READWRITE`, so how are we going to write to it? Not to worry - an undocumented feature of `WriteProcessMemory()` is that it ignores protection flags and will write to memory that is not marked as writable.
 
 From MSDN: "`WriteProcessMemory()` copies the data from the specified buffer in the current process to the address range of the specified process. Any process that has a handle with `PROCESS_VM_WRITE` and `PROCESS_VM_OPERATION` access to the process to be written to can call the function."
 
 ![memaccess](/images/memaccess.png)
 <p style="text-align: center; font-size: 12px;">Partial list of memory protection constants</p>
 
-According to this documentation, we need to have a handle to the process which has the `PROCESS_VM_WRITE` (`0x20`) and `PROCESS_VM_OPERATION` (`0x8`) flags. When these are bitwise-OR'd together, we get `0x28`, which is what we'll pass to the call to `OpenProcess()` as the `dwDesiredAccess` parameter. For reference, the function signature of `OpenProcess()` looks like this:
+According to this documentation, we need to have a handle to the process which has the `PROCESS_VM_WRITE` (`0x20`) and `PROCESS_VM_OPERATION` (`0x8`) flags. When these are OR'd together, we get `0x28`, which is what we'll pass to the call to `OpenProcess()` as the `dwDesiredAccess` parameter. For reference, the function signature of `OpenProcess()` looks like this:
 
 ```c
 HANDLE OpenProcess(
@@ -207,7 +209,7 @@ The plan so far is to call `OpenProcess()` to get a handle to the notepad.exe pr
 
 When the compiler builds an .exe, it allocates the memory regions in chunks. This means that most of the time there will be an area at the end of the region that is empty and is the perfect place to store code without clobbering any existing functions/instructions which may crash the application. This is known as a "code cave".
 
-According to the output of `!address` above, the region we're interested in ends at address `0x7ff7e7f46000`, so let's examine the memory just before the ending address. We can start with `0x800` (`2048`) bytes as a guess:
+According to the output of `!address` above, the region we're interested in ends at address `0x7ff7e7f46000`, so let's examine the memory just before the ending address. We can start by examing the memory 2048 bytes before the end of the region:
 
 ```
 0:006> db 7ff7`e7f46000-0x800
@@ -222,7 +224,7 @@ According to the output of `!address` above, the region we're interested in ends
 ```
 <p style="text-align: center; font-size: 12px;">Displaying the area of memory before the end boundary</p>
 
-Not surprisingly, the last `0x800` bytes in this region are empty, so we could potentially write our shellcode anywhere in this area without clobbering existing code.
+Not surprisingly, the last 0x800 (2048) bytes in this region are empty, so we could potentially write our shellcode anywhere in this area without clobbering existing code.
 
 Just for demonstration purposes, if we go back even further, we'll run into some of notepad's actual live code, so this is too far back (unless we don't mind clobbering existing code which is also an option):
 ```
@@ -238,9 +240,7 @@ Just for demonstration purposes, if we go back even further, we'll run into some
 ```
 <p style="text-align: center; font-size: 12px;">Displaying memory containing live code</p>
 
-This is not a problem since 2048 bytes is plenty of space for most shellcode, so we can stick with `0x800`, which is empty.
-
-We know we can write starting at `0x800` bytes before the end of the RX region (our code cave), so can we just hardcode that address in our call to `WriteProcessMemory()`? Of course not!
+This is not a problem since 2048 bytes is plenty of space for most shellcode. We know we can write starting at 0x800 bytes before the end of the RX region (our code cave), so can we just hardcode that address in our call to `WriteProcessMemory()`? Of course not!
 
 <br/>
 <hr/>
@@ -248,7 +248,7 @@ We know we can write starting at `0x800` bytes before the end of the RX region (
 # Dealing with ASLR
 From Wikipedia: "Address space layout randomization (ASLR) is a computer security technique involved in preventing exploitation of memory corruption vulnerabilities. In order to prevent an attacker from reliably redirecting code execution to, for example, a particular exploited function in memory, ASLR randomly arranges the address space positions of key data areas of a process, including the base of the executable and the positions of the stack, heap and libraries."
 
-Basically, every time Windows boots, ASLR randomizes the base addresses of stuff, so we need to deal with bases and offsets instead of absolute addresses. Knowing the offset of `0x800` from the end of the region is a good start; we just need to know the base address of the process.
+Every time Windows boots, ASLR randomizes the base addresses of modules, so we need to deal with bases and offsets instead of absolute addresses. Knowing the offset of 0x800 from the end of the region is a good start; we just need to know the base address of the process.
 
 Conveniently, C# allows us to retrieve the base address of the notepad.exe process:
 
@@ -263,7 +263,7 @@ Conveniently, C# allows us to retrieve the base address of the notepad.exe proce
     IntPtr NotepadBase = p.MainModule.BaseAddress;
 ```
 
-We just need to calculate the offset from the base address of notepad.exe to `0x800` bytes before the end of the RX region, so:
+We just need to calculate the offset from the base address of notepad.exe to 0x800 bytes before the end of the RX region, so:
 
 ```
 0:006> ? 7ff7`e7f46000 - 0x800 - notepad
@@ -354,15 +354,13 @@ Rebuild, re-upload, run. And...
 
 ![alert](/images/alert.png)
 
-Oh no! The introduction of `CreateRemoteThread()` is a step too far in Cortex's opinion. This means that putting our shellcode in a code cave won't work because we have no way of redirecting execution to that address, since our plan was to use `CreateRemoteThread()` and pass it an entrypoint pointing at the code cave.
-
-Additionally, as I realized much later when I looked at the host's exploit mitigation settings, the [Control Flow Guard](https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard) mitigation was enabled, which would likely have prevented this anyway.
+Oh no! Cortex does not like the call to `CreateRemoteThread()`. This means that putting our shellcode in a code cave won't work because we have no way of redirecting execution to that address, since our plan was to use `CreateRemoteThread()` and pass it an entrypoint pointing at the code cave.
 
 <br/>
 <hr/>
 
 # The Story So Far
-We had our shellcode in a code cave at a known address (base plus offset), but when we tried to `CreateRemoteThread()` to execute it, Cortex became uncomfortable and killed our notepad process. Creating a separate thread inside notepad to run the shellcode is nice because it has the benefit of keeping notepad alive and responsive, but is actually not necessary. After all, notepad is a sacrificial process in this scenario, so as long as our shellcode runs, we don't really care if notepad crashes afterward.
+We had our shellcode in a code cave at a known address (base plus offset), but when we tried to `CreateRemoteThread()` to execute it, Cortex became uncomfortable and killed our notepad process. Creating a separate thread inside notepad to run the shellcode is nice because it has the benefit of keeping notepad alive and responsive, but is actually not necessary. After all, notepad is a sacrificial process in this scenario, so as long as our shellcode runs, we don't care if notepad crashes afterward.
 
 <br/>
 <hr/>
@@ -396,9 +394,9 @@ This was a successful proof of concept, but it seemed incomplete until I got a r
 <hr/>
 
 # More Failure
-Because the shellcode file is stored on disk, all I had to do was replace the MessageBox shellcode file with a reverse shell shellcode file. I opted to use a [custom reverse shell payload](revshell.py) instead of one from `msfvenom` which would almost certainly get caught on disk.
+Because the shellcode file is stored on disk, all I had to do was replace the MessageBox shellcode file with a reverse shell shellcode file. I opted to use a [custom reverse shell payload](revshell.py) instead of one from `msfvenom` which would get caught on disk.
 
-After switching to the reverse shell shellcode file, I was all set to receive my reverse shell, but notepad crashed instead. From experience, I suspected that the shellcode was too long and was clobbering code beyond the `ReplaceSel()` function, causing notepad to crash. For reference, the reverse shell shellcode is about twice as long as the MessageBox shellcode.
+After switching to the reverse shell shellcode file, I was all set to receive my reverse shell, but notepad crashed instead. I suspected that the shellcode was too long and was clobbering code beyond the `ReplaceSel()` function, causing notepad to crash. For reference, the reverse shell shellcode is about twice as long as the MessageBox shellcode.
 
 <br/>
 <hr/>
@@ -463,7 +461,7 @@ public override void Uninstall(IDictionary savedState)
 <hr/>
 
 # One Last Thing
-This time running `installutil /u iu.exe` caused the dreaded Cortex pop-up. Again from experience, I suspected that Cortex was not loving the fact that `cmd.exe` was spawned with a network socket as its stdin and stdout handles.
+This time running `installutil /u iu.exe` caused the dreaded Cortex pop-up. This time, I suspected that Cortex was uncomfortable the fact that `cmd.exe` was spawned with a network socket as its stdin and stdout handles.
 
 Fortunately, this was a quick fix because Cortex is likely only performing this check for command interpreters like `cmd.exe` and `powershell.exe` which means `dbg.exe` should slip under the radar.
 
@@ -479,9 +477,9 @@ The reverse shell shellcode was updated to spawn `dbg.exe` instead of `cmd.exe`,
 
 # Success
 ![win](/images/win.png)
-<p style="text-align: center; font-size: 12px;">heyoooooo</p>
+<p style="text-align: center; font-size: 12px;">Reverse shell established</p>
 
-Thanks for reading, hope you got something out of it, and feel free to reach out with any questions.
+The end. Thanks for reading.
 <br/>
 -rw
 
