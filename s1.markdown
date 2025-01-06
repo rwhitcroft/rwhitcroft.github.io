@@ -115,17 +115,7 @@ Now that I had the base address of the DLL, I could try actually writing to its 
 
 But first things first - before I could write memory, I needed to set the memory protection of this address to actually allow writing, since this region is marked as `PAGE_EXECUTE_READ` as can be seen in Windbg:
 
-```
-0:000> !address inprocessclient64+32b0
-...snip...
-Usage:                  Image
-Base Address:           00007ffb`87571000
-End Address:            00007ffb`877b4000
-Region Size:            00000000`00243000 (   2.262 MB)
-State:                  00001000          MEM_COMMIT
-Protect:                00000020          PAGE_EXECUTE_READ
-...snip...
-```
+![VirtualProtect](/images/vprotect2.png)
 
 To modify memory protection, I used the `VirtualProtect()` Windows API. This function accepts the address whose protection you want to change, how many bytes, the new protection constant, and a place to store the old protection constant which is useful if you want to set it back to its original value when you're done, which I did.
 
