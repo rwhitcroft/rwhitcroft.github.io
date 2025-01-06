@@ -4,12 +4,13 @@ layout: default
 <br/>
 # SentinelOne Agent Bypass
 <hr/>
+<br/>
 
 ## What is this?
 This is a write-up describing the discovery and exploitation of a vulnerability in SentinelOne. 
 
 <hr/>
-
+<br/>
 ## What is SentinelOne?
 SentinelOne is a cybersecurity platform known for its robust Endpoint Detection and Response (EDR) capabilities. It utilizes AI and machine learning to deliver real-time threat detection, automated response, and full visibility into endpoint activities.
 
