@@ -3,9 +3,14 @@ layout: default
 ---
 <br/>
 # SentinelOne Agent Bypass
+<br/>
+<hr/>
 
 ## What is this?
 This is a thing.
+
+<br/>
+<hr/>
 
 ## What more is this?
 This is another thing.
