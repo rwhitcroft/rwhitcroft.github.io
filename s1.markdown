@@ -6,11 +6,11 @@ layout: default
 <hr/>
 
 ## What is this?
-This is a thing.
+This is a write-up describing the discovery and exploitation of a vulnerability in SentinelOne. 
 
 <hr/>
 
-## What more is this?
-This is another thing.
+## What is SentinelOne?
+SentinelOne is a cybersecurity platform known for its robust Endpoint Detection and Response (EDR) capabilities. It utilizes AI and machine learning to deliver real-time threat detection, automated response, and full visibility into endpoint activities. SentinelOne is widely adopted across various industries due to its effectiveness in handling sophisticated attacks, ease of deployment, and comprehensive threat intelligence capabilities. Its ability to autonomously detect and respond to threats without manual intervention sets it apart as a leader in the EDR space.
 
 <hr/>
