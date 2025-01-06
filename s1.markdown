@@ -72,15 +72,13 @@ start             end                 module name
 <br/>
 <hr/>
 
-## InProcessClient64.dll?
-I don't really know. A lot. Fortunately, developing this exploit did not require a deep understanding of how the DLL works or how it fits into the complex S1 platform, just that certain functions in the DLL are called at certain times. This was enough to give me an idea on how to approach exploiting it.
+## InProcessClient64.dll
+I don't really know. A lot. Fortunately, developing this exploit did not require a deep understanding of how the DLL works or how it fits into the complex S1 platform, just that certain functions in the DLL are called at certain times, some of which may be responsible for detecting threats. This was enough to give me an idea on how to approach exploiting it - if I could write to the DLL's memory, maybe I could influence its behavior (i.e. disable it).
 
 <br/>
 <hr/>
 
-## Approach
-The idea was that if I could write to the DLL's memory, maybe I could influence its behavior (i.e. disable it).
-
+## Locating the Base Address
 To be able to write to memory, the first task was to locate the base address of `InProcessClient64.dll`. Due to ASLR, this address will be different on every system, and after every reboot. I created a C++ console app in Visual Studio whose sole purpose (for now) was to attack the `InProcessClient64.dll` that gets injected into it when the process is created.
 
 Using a combination of Windows APIs including `OpenProcess()`, `EnumProcessModules()`, `GetModuleInformation()`, and `GetModuleFileNameExA()`, it is possible to loop through the loaded modules in your process to look for one in particular.
@@ -114,6 +112,10 @@ Here is the code that loops through the loaded modules and looks for the one we'
     }
 ```
 
+<br/>
+<hr/>
+
+## Memory Protections
 Now that I had the base address of the DLL, I could try actually writing to its memory. But where? As the write target, I chose `DllMain()`, the default entrypoint for DLLs. To find the location of this function, I used IDA Pro, which showed its offset as `0x32b0`, which means its virtual address is `0x32b0` plus the base address I just obtained. (For some reason IDA Pro is calling this function `DllEntryPoint()`. I don't know what that's about.)
 
 ![DllMain](/images/dllmain.png)
