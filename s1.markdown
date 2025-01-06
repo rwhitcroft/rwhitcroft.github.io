@@ -118,7 +118,7 @@ Now that I had the base address of the DLL, I could try actually writing to its 
 
 ![DllMain](/images/dllmain.png)
 
-But first things first - before I could write memory, I needed to set the memory protection of this address to actually allow writing, since this region is marked as `PAGE_EXECUTE_READ` as can be seen in Windbg:
+But first things first - before I could write memory, I needed to set the memory protection of this address to actually allow writing, since this region is marked as `PAGE_EXECUTE_READ` as can be seen in WinDbg:
 
 ![VirtualProtect](/images/vprotect2.png)
 
@@ -127,22 +127,24 @@ To modify memory protection, I used the `VirtualProtect()` Windows API. This fun
 So I modified the PoC to include the following code:
 
 ```c
-    QWORD base = (QWORD)modInfo.lpBaseOfDll;
-    QWORD entrypoint = base + 0x32b0;
-    DWORD oldProtect = 0;
+    QWORD base = (QWORD)modInfo.lpBaseOfDll;  // base address of InProcessClient64.dll
+    QWORD entrypoint = base + 0x32b0;         // virtual address of the entrypoint (base plus offset)
+    DWORD oldProtect = 0;                     // stack variable to receive the previous protection
 
     printf("Write target: 0x%llx\n", (QWORD)entrypoint);
 
     if (VirtualProtect((LPVOID)entrypoint, 1, PAGE_READWRITE, &oldProtect))
     {
         printf("Success!\n");
-        VirtualProtect((LPVOID)entrypoint, 1, oldProtect, &oldProtect)
+        VirtualProtect((LPVOID)entrypoint, 1, oldProtect, &oldProtect);
     }
 ```
 
 When I ran the updated PoC in WinDbg, I was able to verify that the protection for the target address had been changed to `PAGE_READWRITE`:
 
 ![VirtualProtect](/images/vprotect.png)
+
+With the protection changed, I should now be able to write artbirary values (bytes) to the address of the entrypoint. When I did this originally, I fulled expected S1 to intervene and kill my process. I don't have a guess as to why S1 allows you to do this.
 
 <br/>
 <hr/>
