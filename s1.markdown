@@ -25,9 +25,11 @@ Successful exploitation of the vulnerability blinds the in-process detection, me
 <hr/>
 
 ## How does the vulnerability work?
-Whenever a new process is created, the kernel injects a DLL into it. This DLL is named `InProcessClient64.dll` on x64 systems and its purpose is to monitor the process for threats. It performs numerous timer- or event-driven tasks such as scanning memory for threats and watching for suspicious memory allocations and network connections.
+When the system boots, S1's kernel driver (`SentinelMonitor.sys`) is loaded. This driver calls the `PsSetCreateProcessNotifyRoutine()` Windows API to tell Windows that it wants to be notified every time a new process is created.
 
-If we use WinDbg to debug notepad.exe, we can see it loaded alongside all the other modules in the process:
+Now, whenever a new process is created, the driver is notified, and it has the opportunity to perform some tasks as part of the process creation. One of these tasks is injecting a DLL into the newly created process. This DLL is named `InProcessClient64.dll` on x64 systems and its purpose is to monitor the process for threats. It performs numerous timer- or event-driven tasks such as scanning memory for threats and watching for suspicious memory allocations and network connections.
+
+If we use WinDbg to debug notepad.exe, we can see this DLL loaded alongside all the other modules in the process:
 ```
 0:000> lm
 start             end                 module name
