@@ -201,15 +201,17 @@ void FindMaliciousThings()
 }
 ```
 
+When this function is called, it returns immediately without doing anything. This is the goal.
+
 <br/>
 <hr/>
 
 ## Function Hunting
-Now that I know what I want to write (`ret`), all that was left was finding the function to "patch". The total number of functions in `InProcessClient64.dll` is 7,447, so I had my work cut out for me. I tried a few different ways to automate this task but ended up doing it manually. Notice that IDA does not know the actual names of the functions since there is no debug information available for this DLL. Instead, it refers to functions as `sub_` and then the offset from the base, so `sub_2760` is `0x2760` bytes from the base address of `InProcessClient64.dll`.
+Now that I know what I want to write (`ret`), all that was left was finding the function to "patch". The total number of functions in `InProcessClient64.dll` is 7,447, so I had my work cut out for me. I tried a few different ways to automate this task but ended up doing it manually. Notice that IDA Pro does not know the actual names of the functions since there is no debug information available for this DLL. Instead, it refers to functions as `sub_` and then the offset from the base, so `sub_2760` is `0x2760` bytes from the base address of `InProcessClient64.dll`.
 
 ![idafunc](/images/idafunc.png)
 
-I used IDA to export the list of all 7,447 functions to a text file, isolated the start address of each function, then split the list into chunks of 100. Instead of programmatically writing a `ret` (since I just proved that I could), I could cheat and use WinDbg's `eb` command (edit byte) to quickly patch a `ret` instruction at each of the 100 functions for this batch of 100. I also switched my test application to one that tries to run the `windows/x64/messagebox` payload since it would certainly get detected as malicious, but should run without detection if I happened to blind the right function.
+I used IDA Pro to export the list of all 7,447 functions to a text file, isolated the start address of each function, then split the list into chunks of 100. Instead of programmatically writing a `ret` (since I just proved that I could), I could cheat and use WinDbg's `eb` command (edit byte) to quickly patch a `ret` instruction at each of the 100 functions for this batch of 100. I also switched my test application to one that tries to run the `windows/x64/messagebox` payload since it would certainly get detected as malicious, but should run without detection if I happened to blind the right function.
 
 The full code for the new test application was:
 ```c
@@ -234,4 +236,4 @@ int main(int argc, char* argv[])
 }
 ```
 
-There is nothing clever in this code; in fact, it is purposely not clever, because I am hoping that it will run undetected when the right function is patched with a `ret`.
+There is nothing clever about this code; in fact, it is purposely not clever, because I am hoping that it will run undetected when the right function is patched with a `ret`.
