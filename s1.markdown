@@ -185,5 +185,8 @@ Success - there is the `nop` (`\x90`) instruction I wrote. I had now confirmed t
 ## Recap
 I have the base address of `InProcessClient64.dll` and I've proven that I can call `VirtualProtect()` to set the protection of an address to `PAGE_READWRITE` which will allow me to write data. The next task was to figure out what to write, and where.
 
+<br/>
+<hr/>
+
 ## Function Hunting
 The total number of functions in `InProcessClient64.dll` is 7,447. The theory is that at least one of these functions is getting called periodically to perform some type of in-process scanning or threat detection.
