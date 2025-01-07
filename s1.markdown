@@ -188,5 +188,26 @@ I have the base address of `InProcessClient64.dll`, I've proven that I can call 
 <br/>
 <hr/>
 
+## RET
+Since the goal was to blind S1, my theory was that if I could find the function that is responsible for performing the in-process monitoring, I could write a `ret` (`\xc3`) as its first instruction, which would end execution of the function and return to the address on the top of the stack, never reaching the code that would result in a detection. For example, if we pretend the name of the function was `FindMaliciousThings()`, I wanted it to look like this after I wrote my `ret` instruction:
+
+```c
+void FindMaliciousThings()
+{
+    return;
+    ScanMemoryForThreats();
+    ScanOtherStuffForThreats();
+    FindThreatsAllOverThePlace();
+}
+```
+
+<br/>
+<hr/>
+
 ## Function Hunting
-The total number of functions in `InProcessClient64.dll` is 7,447. The theory is that at least one of these functions is getting called periodically to perform some type of in-process scanning or threat detection.
+Now that I know what I want to write (`ret`), all that was left was finding the function to "patch". The total number of functions in `InProcessClient64.dll` is 7,447, so I had my work cut out for me. I tried a few different ways to automate this task but ended up doing it manually.
+
+![idafunc](/images/idafunc.png)
+
+I used IDA to export the list of all 7,447 functions to a text file, isolated the start address of each function, then split the list into chunks of 100. Instead of programmatically writing a `ret` (since I just proved that I could), I could cheat and use WinDbg's `eb` command (edit byte) to quickly patch a `ret` instruction at each of the 100 functions for this iteration. I also switched my test application to one that tries to run the `windows/x64/messagebox` payload since it would certainly get detected as malicious, but should run without detection if I happened to blind the right function.
+
