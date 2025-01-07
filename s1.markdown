@@ -146,10 +146,44 @@ When I ran the updated PoC in WinDbg, I was able to verify that the protection f
 
 ![VirtualProtect](/images/vprotect.png)
 
-With the protection changed, I should now be able to write artbirary values to the address of the entrypoint. When I did this originally, I fully expected S1 to intervene and kill my process. I don't have a guess as to why S1 allows you to do this.
+With the protection changed, I should now be able to write arbitrary values to the address of the entrypoint. When I did this originally, I fully expected S1 to intervene and kill my process. I don't have a guess as to why S1 allows you to do this.
 
 <br/>
 <hr/>
 
-## So what now?
-More stuff.
+## Writing a Single Byte
+At this point I tried writing a single byte to the target address (`DllMain()`). I updated the PoC to add a call to `RtlCopyMemory()` which will copy (write) my `\x90` to the target address. It didn't really matter what byte I chose here, I just needed to prove that I could write at all.
+
+```c
+    QWORD base = (QWORD)modInfo.lpBaseOfDll;  // base address of InProcessClient64.dll
+    QWORD entrypoint = base + 0x32b0;         // virtual address of the entrypoint (base plus offset)
+    DWORD oldProtect = 0;                     // stack variable to receive the previous protection
+
+    printf("Write target: 0x%llx\n", (QWORD)entrypoint);
+
+    if (VirtualProtect((LPVOID)entrypoint, 1, PAGE_READWRITE, &oldProtect))
+    {
+        printf("Success!\n");
+        RtlCopyMemory((LPVOID)addr, "\x90", 1);
+        VirtualProtect((LPVOID)entrypoint, 1, oldProtect, &oldProtect);
+    }
+```
+
+I set a breakpoint right before the call to `RtlCopyMemory()` to examine the memory before writing. This is what the unmodified `DllMain()` looked like:
+
+![before-write](/images/before-write.png)
+
+I then let `RtlCopyMemory()` execute and examined the same address after the write operation:
+
+![after-write](/images/after-write.png)
+
+Success - there is the `nop` (`\x90`) instruction I wrote. I had now confirmed that I could write arbitrary instructions into `InProcessClient64.dll`.
+
+<br/>
+<hr/>
+
+## Recap
+I have the base address of `InProcessClient64.dll` and I've proven that I can call `VirtualProtect()` to set the protection of an address to `PAGE_READWRITE` which will allow me to write data. The next task was to figure out what to write, and where.
+
+## Function Hunting
+The total number of functions in `InProcessClient64.dll` is 7,447. The theory is that at least one of these functions is getting called periodically to perform some type of in-process scanning or threat detection.
