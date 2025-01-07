@@ -211,7 +211,33 @@ Now that I know what I want to write (`ret`), all that was left was finding the 
 
 ![idafunc](/images/idafunc.png)
 
-I used IDA Pro to export the list of all 7,447 functions to a text file, isolated the start address of each function, then split the list into chunks of 100. Instead of programmatically writing a `ret` (since I just proved that I could), I could cheat and use WinDbg's `eb` command (edit byte) to quickly patch a `ret` instruction at each of the 100 functions in this batch. I also switched my test application to one that tries to run the `windows/x64/messagebox` payload since it would certainly get detected as malicious, but should run without detection if I happened to blind the right function.
+<br/>
+<hr/>
+
+## Patching with WinDbg
+I used IDA Pro to export the list of all 7,447 functions to a text file, isolated the start address of each function, then split the list into chunks of 100. Instead of programmatically writing a `ret`, I could cheat and use WinDbg's `eb` command (edit byte) to quickly patch a `ret` instruction at each of the 100 functions in this batch.
+
+For brevity, and if we pretend there were only 3 functions, I did something like this to create the WinDbg startup file:
+
+```
+user@kali:~$ cat funcs.txt
+sub_2800        .text   0000000000002800        00000020        00000028                R
+sub_2820        .text   0000000000002820        0000000C                        R       .       .
+sub_2830        .text   0000000000002830        00000020        00000028                R
+user@kali:~$ cat funcs.txt | awk '{print $3}' | while read f; do echo "eb inprocessclient64+${f} c3"; done | tee windbg.txt
+eb inprocessclient64+0000000000002800 c3
+eb inprocessclient64+0000000000002820 c3
+eb inprocessclient64+0000000000002830 c3
+user@kali:~$
+```
+
+Now when WinDbg starts, it will read this startup file and patch these 3 addresses with a `ret` (`\xc3`) instruction. Remember that I could (and will eventually) do this in C++, but it is simpler to let WinDbg do it since the goal now is to find out which function I need to patch to blind S1.
+
+<br/>
+<hr/>
+
+## Malicious Code
+At this point I switched my test application to one that tries to run the `windows/x64/messagebox` payload since it would certainly get detected as malicious.
 
 The full code for the new test application was:
 ```c
@@ -236,4 +262,16 @@ int main(int argc, char* argv[])
 }
 ```
 
-There is nothing clever about this code; in fact, it is purposely not clever, because I am hoping that it will run undetected when the right function is patched with a `ret`. An observation with this code is that S1 seems to be very gentle about on-disk detection. When this code is compiled, it produces an executable that most EDR products would flag as malicious, but not S1. Maybe the idea is that S1 relies more heavily on its in-process detection.
+There is nothing clever about this code. In fact, it is purposely not clever, because I am hoping that it will run undetected when the right function is patched with a `ret`. An observation with this code is that S1 seems to be very gentle about on-disk detection. When this code is compiled, it produces an executable that most EDR products would flag as malicious, but not S1. Maybe the idea is that S1 relies more heavily on its in-process detection.
+
+<br/>
+<hr/>
+
+## Recap
+I have created a WinDbg startup file that will patch a `ret` instruction as the first instruction of 100 functions per batch, causing these functions to return immediately. I will then run my malicious code (MessageBox shellcode) with these 100 functions patched. If S1 detects threats, then none of those 100 were the right function. I will continue this process until S1 does not detect threats, meaning one of those 100 functions was the right one. I will then pare down the list until I find the one function that is responsible for detecting threats.
+
+<br/>
+<hr/>
+
+## Skipping Ahead
+Stuff.
