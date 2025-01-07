@@ -73,7 +73,7 @@ start             end                 module name
 <hr/>
 
 ## InProcessClient64.dll
-I don't really know. A lot. Fortunately, developing this exploit did not require a deep understanding of how the DLL works or how it fits into the complex S1 platform, just that certain functions in the DLL are called at certain times, some of which may be responsible for detecting threats. This was enough to give me an idea on how to approach exploiting it - if I could write to the DLL's memory, maybe I could influence its behavior (i.e. disable it).
+Fortunately, developing this exploit did not require a deep understanding of how the DLL works or how it fits into the complex S1 platform, just that certain functions in the DLL are called at certain times, some of which may be responsible for detecting threats. This was enough to give me an idea on how to approach exploiting it - if I could write to the DLL's memory, maybe I could influence its behavior (i.e. disable it).
 
 <br/>
 <hr/>
@@ -177,13 +177,13 @@ I then let `RtlCopyMemory()` execute and examined the same address after the wri
 
 ![after-write](/images/after-write.png)
 
-Success - there is the `nop` (`\x90`) instruction I wrote. I had now confirmed that I could write arbitrary instructions into `InProcessClient64.dll`.
+Success! There is the `nop` (`\x90`) instruction I wrote. I had now confirmed that I could write into `InProcessClient64.dll`'s memory.
 
 <br/>
 <hr/>
 
 ## Recap
-I have the base address of `InProcessClient64.dll` and I've proven that I can call `VirtualProtect()` to set the protection of an address to `PAGE_READWRITE` which will allow me to write data. The next task was to figure out what to write, and where.
+I have the base address of `InProcessClient64.dll`, I've proven that I can call `VirtualProtect()` to set the protection of an address to `PAGE_READWRITE`, and I was able to write to memory with `RtlCopyMemory()`. The next task was to figure out what to write, and where.
 
 <br/>
 <hr/>
