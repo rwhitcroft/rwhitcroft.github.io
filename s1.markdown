@@ -211,7 +211,7 @@ Now that I know what I want to write (`ret`), all that was left was finding the 
 
 ![idafunc](/images/idafunc.png)
 
-I used IDA Pro to export the list of all 7,447 functions to a text file, isolated the start address of each function, then split the list into chunks of 100. Instead of programmatically writing a `ret` (since I just proved that I could), I could cheat and use WinDbg's `eb` command (edit byte) to quickly patch a `ret` instruction at each of the 100 functions for this batch of 100. I also switched my test application to one that tries to run the `windows/x64/messagebox` payload since it would certainly get detected as malicious, but should run without detection if I happened to blind the right function.
+I used IDA Pro to export the list of all 7,447 functions to a text file, isolated the start address of each function, then split the list into chunks of 100. Instead of programmatically writing a `ret` (since I just proved that I could), I could cheat and use WinDbg's `eb` command (edit byte) to quickly patch a `ret` instruction at each of the 100 functions in this batch. I also switched my test application to one that tries to run the `windows/x64/messagebox` payload since it would certainly get detected as malicious, but should run without detection if I happened to blind the right function.
 
 The full code for the new test application was:
 ```c
@@ -236,4 +236,4 @@ int main(int argc, char* argv[])
 }
 ```
 
-There is nothing clever about this code; in fact, it is purposely not clever, because I am hoping that it will run undetected when the right function is patched with a `ret`.
+There is nothing clever about this code; in fact, it is purposely not clever, because I am hoping that it will run undetected when the right function is patched with a `ret`. An observation with this code is that S1 seems to be very gentle about on-disk detection. When this code is compiled, it produces an executable that most EDR products would flag as malicious, but not S1. Maybe the idea is that S1 relies more heavily on its in-process detection.
