@@ -277,3 +277,5 @@ I have created a WinDbg startup file that will patch a `ret` instruction as the 
 After a few batches of 100, I ran the malicious code and finally saw my messagebox stay on the screen. S1 did not detect the shellcode this time! With a few more smaller batches, I was able to narrow it down to the single function responsible for detecting in-process threats: `sub_2ef60`.
 
 ![2ef60](/images/2ef60.png)
+
+There's nothing obvious in this function that suggests it's especially important, but it does call three more functions which in turn may be responsible for in-process threat detection.
