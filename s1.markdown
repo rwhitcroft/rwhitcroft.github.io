@@ -6,7 +6,7 @@ layout: default
 <hr/>
 
 ## What is this?
-This is a write-up describing the discovery and exploitation of a vulnerability in Sentinel Agent ("S1"), the in-process monitoring component of the SentinelOne platform.
+This is a write-up describing the discovery and exploitation of a vulnerability in Sentinel Agent, the in-process monitoring component of the SentinelOne platform.
 
 <br/>
 <hr/>
@@ -28,7 +28,7 @@ Successful exploitation of the vulnerability blinds the in-process detection, me
 <hr/>
 
 ## In-Process Detection
-When the system boots, S1's kernel driver (`SentinelMonitor.sys`) is loaded. This driver calls the `PsSetCreateProcessNotifyRoutine()` Windows API to tell Windows that it wants to be notified every time a new process is created.
+When the system boots, SentinelOne's kernel driver (`SentinelMonitor.sys`) is loaded. This driver calls the `PsSetCreateProcessNotifyRoutine()` Windows API to tell Windows that it wants to be notified every time a new process is created.
 
 Now, whenever a new process is created, the driver is notified, and it has the opportunity to perform some tasks as part of the process creation. One of these tasks is injecting a DLL into the newly created process. This DLL is named `InProcessClient64.dll` on x64 systems and its purpose is to monitor the process for threats. It performs numerous timer- or event-driven tasks such as scanning memory for threats and watching for suspicious memory operations and network connections.
 
@@ -73,7 +73,7 @@ start             end                 module name
 <hr/>
 
 ## InProcessClient64.dll
-Fortunately, developing this exploit did not require a deep understanding of how the DLL works or how it fits into the complex S1 platform, just that certain functions in the DLL are called at certain times, some of which may be responsible for detecting threats. This was enough to give me an idea on how to approach exploiting it - if I could write to the DLL's memory, maybe I could influence its behavior (i.e. disable it).
+Fortunately, developing this exploit did not require a deep understanding of how the DLL works or how it fits into the complex SentinelOne platform, just that certain functions in the DLL are called at certain times, some of which may be responsible for detecting threats. This was enough to give me an idea on how to approach exploiting it - if I could write to the DLL's memory, maybe I could influence its behavior (i.e. disable it).
 
 <br/>
 <hr/>
@@ -83,7 +83,7 @@ To be able to write to memory, the first task was to locate the base address of 
 
 Using a combination of Windows APIs including `OpenProcess()`, `EnumProcessModules()`, `GetModuleInformation()`, and `GetModuleFileNameExA()`, it is possible to loop through the loaded modules in your process to look for one in particular.
 
-Here is the code that loops through the loaded modules and looks for the one we're interested in. Note that I am not using the DLL's full name, which is probably not necessary, but is less likely to be seen as malicious if S1 happens to be watching for something like this.
+Here is the code that loops through the loaded modules and looks for the one we're interested in. Note that I am not using the DLL's full name, which is probably not necessary, but is less likely to be seen as malicious if SentinelOne happens to be watching for something like this.
 
 ```c
     HMODULE hModules[1024];
@@ -146,7 +146,7 @@ When I ran the updated PoC in WinDbg, I was able to verify that the protection f
 
 ![VirtualProtect](/images/vprotect.png)
 
-With the protection changed, I should now be able to write arbitrary values to the address of the entrypoint. When I did this originally, I fully expected S1 to intervene and kill my process. I don't have a guess as to why S1 allows you to do this.
+With the protection changed, I should now be able to write arbitrary values to the address of the entrypoint. When I did this originally, I fully expected SentinelOne to intervene and kill my process. I don't have a guess as to why SentinelOne allows you to do this.
 
 <br/>
 <hr/>
@@ -189,7 +189,7 @@ I have the base address of `InProcessClient64.dll`, I've proven that I can call 
 <hr/>
 
 ## RET
-Since the goal was to blind S1, my theory was that if I could find the function that is responsible for performing the in-process monitoring, I could write a `ret` (`\xc3`) as its first instruction, which would end execution of the function and return to the address on the top of the stack, never reaching the code that would result in a detection. For example, if we pretend the name of the function was `FindMaliciousThings()`, I wanted it to look like this after I wrote my `ret` instruction:
+Since the goal was to blind SentinelOne, my theory was that if I could find the function that is responsible for performing the in-process monitoring, I could write a `ret` (`\xc3`) as its first instruction, which would end execution of the function and return to the address on the top of the stack, never reaching the code that would result in a detection. For example, if we pretend the name of the function was `FindMaliciousThings()`, I wanted it to look like this after I wrote my `ret` instruction:
 
 ```c
 void FindMaliciousThings()
@@ -231,7 +231,7 @@ eb inprocessclient64+0000000000002830 c3
 user@kali:~$
 ```
 
-Now when WinDbg starts, it will read this startup file and patch these 3 addresses with a `ret` (`\xc3`) instruction. Remember that I could (and will eventually) do this in C++, but it is simpler to let WinDbg do it since the goal now is to find out which function I need to patch to blind S1.
+Now when WinDbg starts, it will read this startup file and patch these 3 addresses with a `ret` (`\xc3`) instruction. Remember that I could (and will eventually) do this in C++, but it is simpler to let WinDbg do it since the goal now is to find out which function I need to patch to blind SentinelOne.
 
 <br/>
 <hr/>
@@ -271,19 +271,19 @@ int main(int argc, char* argv[])
 }
 ```
 
-There is nothing clever about this code. In fact, it is purposely not clever, because I am hoping that it will run undetected when the right function is patched with a `ret`. An observation with this code is that S1 seems to be very gentle about on-disk detection. When this code is compiled, it produces an executable that most EDR products would flag as malicious, but not S1. Maybe the idea is that S1 relies more heavily on its in-process detection.
+There is nothing clever about this code. In fact, it is purposely not clever, because I am hoping that it will run undetected when the right function is patched with a `ret`. An observation with this code is that SentinelOne seems to be very gentle about on-disk detection. When this code is compiled, it produces an executable that most EDR products would flag as malicious, but not SentinelOne. Maybe the idea is that SentinelOne relies more heavily on its in-process detection.
 
 <br/>
 <hr/>
 
 ## Recap
-I have created a WinDbg startup file that will patch a `ret` instruction as the first instruction of 100 functions per batch, causing these functions to return immediately. I will then run my malicious code (MessageBox shellcode) with these 100 functions patched. If S1 detects threats, then none of those 100 were the right function. I will continue this process until S1 does not detect threats, meaning one of those 100 functions was the right one. I will then pare down the list until I find the one function that is responsible for detecting threats.
+I have created a WinDbg startup file that will patch a `ret` instruction as the first instruction of 100 functions per batch, causing these functions to return immediately. I will then run my malicious code (MessageBox shellcode) with these 100 functions patched. If SentinelOne detects threats, then none of those 100 were the right function. I will continue this process until SentinelOne does not detect threats, meaning one of those 100 functions was the right one. I will then pare down the list until I find the one function that is responsible for detecting threats.
 
 <br/>
 <hr/>
 
 ## Function Located
-After a few batches of 100, I ran the malicious code and finally saw my messagebox stay on the screen. S1 did not detect the shellcode this time! With a few more smaller batches, I was able to narrow it down to the single function responsible for detecting in-process threats: `sub_2ef60`.
+After a few batches of 100, I ran the malicious code and finally saw my messagebox stay on the screen. SentinelOne did not detect the shellcode this time! With a few more smaller batches, I was able to narrow it down to the single function responsible for detecting in-process threats: `sub_2ef60`.
 
 ![2ef60](/images/2ef60.png)
 
