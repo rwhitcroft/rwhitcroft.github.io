@@ -241,6 +241,15 @@ At this point I switched my test application to one that tries to run the `windo
 
 The full code for the new test application was:
 ```c
+static std::vector<char> unxor_file(const std::string& filename, char key)
+{
+    std::ifstream ifs(filename, std::ios::binary);
+    std::vector<char> vec((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+    std::for_each(vec.begin(), vec.end(), [key](char& c) { c ^= key; });
+
+    return vec;
+}
+
 int main(int argc, char* argv[])
 {
     // this is the raw payload from msfvenom, but each byte is xor'd with 5 to hide it on disk
