@@ -209,7 +209,7 @@ The plan so far is to call `OpenProcess()` to get a handle to the notepad.exe pr
 
 When the compiler builds an .exe, it allocates the memory regions in chunks. This means that most of the time there will be an area at the end of the region that is empty and is the perfect place to store code without clobbering any existing functions/instructions which may crash the application. This is known as a "code cave".
 
-According to the output of `!address` above, the region we're interested in ends at address `0x7ff7e7f46000`, so let's examine the memory just before the ending address. We can start by examing the memory 2048 bytes before the end of the region:
+According to the output of `!address` above, the region we're interested in ends at address `0x7ff7e7f46000`, so let's examine the memory just before the ending address. We can start by examining the memory 2048 bytes before the end of the region:
 
 ```
 0:006> db 7ff7`e7f46000-0x800
@@ -461,7 +461,7 @@ public override void Uninstall(IDictionary savedState)
 <hr/>
 
 # One Last Thing
-This time running `installutil /u iu.exe` caused the dreaded Cortex pop-up. This time, I suspected that Cortex was uncomfortable the fact that `cmd.exe` was spawned with a network socket as its stdin and stdout handles.
+This time running `installutil /u iu.exe` caused the dreaded Cortex pop-up. This time, I suspected that Cortex was uncomfortable with the fact that `cmd.exe` was spawned with a network socket as its stdin and stdout handles.
 
 Fortunately, this was a quick fix because Cortex is likely only performing this check for command interpreters like `cmd.exe` and `powershell.exe` which means `dbg.exe` should slip under the radar.
 
