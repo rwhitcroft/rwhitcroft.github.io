@@ -287,6 +287,9 @@ After a few batches of 100, I ran the malicious code and finally saw my messageb
 
 There's nothing obvious in this function that suggests it's especially important, but it does call three more functions which in turn may be responsible for in-process threat detection.
 
+<br/>
+<hr/>
+
 ## Blinding with Code
 Now that I knew the address to write to (DLL base plus `0x2ef60`), I updated the PoC to write this memory programmatically instead of using WinDbg breakpoints:
 
@@ -351,3 +354,7 @@ int main(int argc, char* argv[])
 The first thing this code does is write a `ret` to the target address. It then performs the standard sequence of allocating RWX memory, copying shellcode, and creating a thread to run it. When this code is run, we get the messagebox, and SentinelOne has not raised any alerts.
 
 ![win2](/images/win2.png)
+
+<br/>
+<hr/>
+
