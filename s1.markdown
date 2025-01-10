@@ -352,11 +352,7 @@ int main(int argc, char* argv[])
 }
 ```
 
-<br/>
-
 The first thing this code does is write a `ret` to the target address. It then performs the standard sequence of allocating RWX memory, copying shellcode, and creating a thread to run it. When this code is run, we get the messagebox, and SentinelOne has not raised any alerts.
-
-<br/>
 
 ![win2](/images/win2.png)
 
