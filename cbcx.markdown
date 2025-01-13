@@ -394,7 +394,7 @@ This was a successful proof of concept, but it seemed incomplete until I got a r
 <hr/>
 
 # More Failure
-Because the shellcode file is stored on disk, all I had to do was replace the MessageBox shellcode file with a reverse shell shellcode file. I opted to use a [custom reverse shell payload](revshell.py) instead of one from `msfvenom` which would get caught on disk.
+Because the shellcode file is stored on disk, all I had to do was replace the MessageBox shellcode file with a reverse shell shellcode file. I opted to use a custom reverse shell payload instead of one from `msfvenom` which would get caught on disk.
 
 After switching to the reverse shell shellcode file, I was all set to receive my reverse shell, but notepad crashed instead. I suspected that the shellcode was too long and was clobbering code beyond the `ReplaceSel()` function, causing notepad to crash. For reference, the reverse shell shellcode is about twice as long as the MessageBox shellcode.
 
