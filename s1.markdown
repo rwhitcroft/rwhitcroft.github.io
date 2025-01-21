@@ -141,7 +141,7 @@ So I modified the PoC to include the following code:
         VirtualProtect((LPVOID)entrypoint, 1, oldProtect, &oldProtect);
     }
 ```
-
+<br/>
 When I ran the updated PoC in WinDbg, I was able to verify that the protection for the target address had been changed to `PAGE_READWRITE`:
 
 ![VirtualProtect](/images/vprotect.png)
@@ -168,11 +168,12 @@ At this point I tried writing a single byte to the target address (`DllMain()`).
         VirtualProtect((LPVOID)entrypoint, 1, oldProtect, &oldProtect);
     }
 ```
-
+<br/>
 I set a breakpoint right before the call to `RtlCopyMemory()` to examine the memory before writing. This is what the unmodified `DllMain()` looked like:
 
 ![before-write](/images/before-write.png)
 
+<br/>
 I then let `RtlCopyMemory()` execute and examined the same address after the write operation:
 
 ![after-write](/images/after-write.png)
@@ -183,20 +184,20 @@ Success! There is the `nop` (`\x90`) instruction I wrote. I had now confirmed th
 <hr/>
 
 ## Recap
-I have the base address of `InProcessClient64.dll`, I've proven that I can call `VirtualProtect()` to set the protection of an address to `PAGE_READWRITE`, and I was able to write to memory with `RtlCopyMemory()`. The next task was to figure out what to write, and where.
+I have the base address of `InProcessClient64.dll`, I've proven that I can call `VirtualProtect()` to set the protection of an address to `PAGE_READWRITE`, and I was able to write to memory at `DllMain()` with `RtlCopyMemory()`. Remember that I've only written to `DllMain()` for proof of concept, so the next task was to figure out what to write, and where.
 
 <br/>
 <hr/>
 
 ## RET
-Since the goal was to blind SentinelOne, my theory was that if I could find the function that is responsible for performing the in-process monitoring, I could write a `ret` (`\xc3`) as its first instruction, which would end execution of the function and return to the address on the top of the stack, never reaching the code that would result in a detection. For example, if we pretend the name of the function was `FindMaliciousThings()`, I wanted it to look like this after I wrote my `ret` instruction:
+Since the goal was to blind SentinelOne, my theory was that if I could find the function that is responsible for performing the in-process monitoring, I could write a `ret` (`\xc3`) as its first instruction, which would end execution of the function and return to the address on the top of the stack, never reaching the code that would result in a detection. For example, if we pretend the name of the function was `DetectThreats()`, I wanted it to look like this after I wrote my `ret` instruction:
 
 ```c
-void FindMaliciousThings()
+void DetectThreats()
 {
     return;
     ScanMemoryForThreats();
-    ScanOtherStuffForThreats();
+    FindThreatsOverThere();
     FindThreatsAllOverThePlace();
 }
 ```
@@ -293,7 +294,6 @@ There's nothing obvious in this function that suggests it's especially important
 ## Blinding with Code
 Now that I knew the address to write to (DLL base plus `0x2ef60`), I updated the PoC to write this memory programmatically instead of using WinDbg breakpoints:
 
-
 ```c
 static std::vector<char> unxor_file(const std::string& filename, char key)
 {
@@ -352,7 +352,7 @@ int main(int argc, char* argv[])
 }
 ```
 
-The first thing this code does is write a `ret` to the target address. It then performs the standard sequence of allocating RWX memory, copying shellcode, and creating a thread to run it. When this code is run, we get the messagebox, and SentinelOne has not raised any alerts.
+The first thing this code does is write a `ret` to the target address. It then performs the standard sequence of allocating RWX memory, copying shellcode, and creating a thread to run it, which would usually get detected as malicious. When this code is run, we get the messagebox, and SentinelOne has not raised any alerts.
 
 <br/>
 
